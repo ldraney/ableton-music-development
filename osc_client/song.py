@@ -311,3 +311,214 @@ class Song:
         while not recording (requires armed track).
         """
         self._client.send("/live/song/capture_midi")
+
+    # Scene management
+
+    def create_scene(self, index: int = -1) -> None:
+        """Create a new scene.
+
+        Args:
+            index: Position to insert scene (-1 appends to end)
+        """
+        self._client.send("/live/song/create_scene", index)
+
+    def delete_scene(self, index: int) -> None:
+        """Delete scene at index.
+
+        Args:
+            index: Scene index to delete (0-based)
+        """
+        self._client.send("/live/song/delete_scene", index)
+
+    def duplicate_scene(self, index: int) -> None:
+        """Duplicate scene at index.
+
+        Args:
+            index: Scene index to duplicate (0-based)
+        """
+        self._client.send("/live/song/duplicate_scene", index)
+
+    def get_song_length(self) -> float:
+        """Get the total song length in beats.
+
+        Returns:
+            Song length in beats
+        """
+        result = self._client.query("/live/song/get/song_length")
+        return float(result[0])
+
+    # Loop control
+
+    def get_loop(self) -> bool:
+        """Check if loop is enabled.
+
+        Returns:
+            True if loop is enabled
+        """
+        result = self._client.query("/live/song/get/loop")
+        return bool(result[0])
+
+    def set_loop(self, enabled: bool) -> None:
+        """Enable or disable loop.
+
+        Args:
+            enabled: True to enable loop
+        """
+        self._client.send("/live/song/set/loop", int(enabled))
+
+    def get_loop_start(self) -> float:
+        """Get the loop start position in beats.
+
+        Returns:
+            Loop start position in beats
+        """
+        result = self._client.query("/live/song/get/loop_start")
+        return float(result[0])
+
+    def set_loop_start(self, beats: float) -> None:
+        """Set the loop start position.
+
+        Args:
+            beats: Loop start position in beats
+        """
+        self._client.send("/live/song/set/loop_start", float(beats))
+
+    def get_loop_length(self) -> float:
+        """Get the loop length in beats.
+
+        Returns:
+            Loop length in beats
+        """
+        result = self._client.query("/live/song/get/loop_length")
+        return float(result[0])
+
+    def set_loop_length(self, beats: float) -> None:
+        """Set the loop length.
+
+        Args:
+            beats: Loop length in beats
+        """
+        self._client.send("/live/song/set/loop_length", float(beats))
+
+    # Quantization
+
+    def get_midi_recording_quantization(self) -> int:
+        """Get the MIDI recording quantization setting.
+
+        Returns:
+            Quantization value (0=None, 1=1/4, 2=1/8, 3=1/8T, 4=1/8+1/8T,
+            5=1/16, 6=1/16T, 7=1/16+1/16T, 8=1/32)
+        """
+        result = self._client.query("/live/song/get/midi_recording_quantization")
+        return int(result[0])
+
+    def set_midi_recording_quantization(self, value: int) -> None:
+        """Set the MIDI recording quantization.
+
+        Args:
+            value: Quantization value (0=None, 1=1/4, 2=1/8, 3=1/8T, 4=1/8+1/8T,
+                   5=1/16, 6=1/16T, 7=1/16+1/16T, 8=1/32)
+        """
+        self._client.send("/live/song/set/midi_recording_quantization", int(value))
+
+    def get_clip_trigger_quantization(self) -> int:
+        """Get the clip trigger quantization setting.
+
+        Returns:
+            Quantization value (0=None, 1=8 bars, 2=4 bars, 3=2 bars,
+            4=1 bar, 5=1/2, 6=1/2T, 7=1/4, 8=1/4T, 9=1/8, 10=1/8T,
+            11=1/16, 12=1/16T, 13=1/32)
+        """
+        result = self._client.query("/live/song/get/clip_trigger_quantization")
+        return int(result[0])
+
+    def set_clip_trigger_quantization(self, value: int) -> None:
+        """Set the clip trigger quantization.
+
+        Args:
+            value: Quantization value (0=None, 1=8 bars, 2=4 bars, 3=2 bars,
+                   4=1 bar, 5=1/2, 6=1/2T, 7=1/4, 8=1/4T, 9=1/8, 10=1/8T,
+                   11=1/16, 12=1/16T, 13=1/32)
+        """
+        self._client.send("/live/song/set/clip_trigger_quantization", int(value))
+
+    # Session recording
+
+    def trigger_session_record(self) -> None:
+        """Trigger session recording.
+
+        Starts recording into the session view.
+        """
+        self._client.send("/live/song/trigger_session_record")
+
+    def get_session_record(self) -> bool:
+        """Check if session recording is enabled.
+
+        Returns:
+            True if session recording is enabled
+        """
+        result = self._client.query("/live/song/get/session_record")
+        return bool(result[0])
+
+    def set_session_record(self, enabled: bool) -> None:
+        """Enable or disable session recording.
+
+        Args:
+            enabled: True to enable session recording
+        """
+        self._client.send("/live/song/set/session_record", int(enabled))
+
+    # Arrangement recording
+
+    def get_arrangement_overdub(self) -> bool:
+        """Check if arrangement overdub is enabled.
+
+        Returns:
+            True if arrangement overdub is enabled
+        """
+        result = self._client.query("/live/song/get/arrangement_overdub")
+        return bool(result[0])
+
+    def set_arrangement_overdub(self, enabled: bool) -> None:
+        """Enable or disable arrangement overdub.
+
+        Args:
+            enabled: True to enable arrangement overdub
+        """
+        self._client.send("/live/song/set/arrangement_overdub", int(enabled))
+
+    # Punch in/out
+
+    def get_punch_in(self) -> bool:
+        """Check if punch-in is enabled.
+
+        Returns:
+            True if punch-in is enabled
+        """
+        result = self._client.query("/live/song/get/punch_in")
+        return bool(result[0])
+
+    def set_punch_in(self, enabled: bool) -> None:
+        """Enable or disable punch-in.
+
+        Args:
+            enabled: True to enable punch-in
+        """
+        self._client.send("/live/song/set/punch_in", int(enabled))
+
+    def get_punch_out(self) -> bool:
+        """Check if punch-out is enabled.
+
+        Returns:
+            True if punch-out is enabled
+        """
+        result = self._client.query("/live/song/get/punch_out")
+        return bool(result[0])
+
+    def set_punch_out(self, enabled: bool) -> None:
+        """Enable or disable punch-out.
+
+        Args:
+            enabled: True to enable punch-out
+        """
+        self._client.send("/live/song/set/punch_out", int(enabled))

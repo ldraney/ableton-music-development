@@ -174,3 +174,131 @@ def test_stop_all_clips(track):
     """Test stopping all clips on a track."""
     # Just verify the method executes without error
     track.stop_all_clips(0)
+
+
+def test_insert_device(song, track):
+    """Test inserting a device onto a track.
+
+    Creates a MIDI track, inserts Wavetable, verifies it appears,
+    then cleans up.
+    """
+    original_tracks = song.get_num_tracks()
+    track_idx = original_tracks  # New track will be at this index
+
+    # Create MIDI track at end
+    song.create_midi_track(-1)
+    time.sleep(SETTLE_TIME)
+
+    try:
+        # Insert Wavetable onto the track
+        device_idx = track.insert_device(track_idx, "Wavetable")
+        time.sleep(SETTLE_TIME)
+
+        # Verify device was inserted
+        assert device_idx >= 0, "Device insertion failed"
+
+        # Verify device count increased
+        num_devices = track.get_num_devices(track_idx)
+        assert num_devices >= 1, "Device not found on track"
+
+        # Verify device name
+        device_names = track.get_device_names(track_idx)
+        assert "Wavetable" in device_names, f"Wavetable not in {device_names}"
+    finally:
+        # Cleanup - delete the track
+        song.delete_track(track_idx)
+        time.sleep(SETTLE_TIME)
+
+
+def test_insert_audio_effect(song, track):
+    """Test inserting an audio effect onto a track."""
+    original_tracks = song.get_num_tracks()
+    track_idx = original_tracks
+
+    # Create audio track
+    song.create_audio_track(-1)
+    time.sleep(SETTLE_TIME)
+
+    try:
+        # Insert Compressor (more unique name than Reverb)
+        device_idx = track.insert_device(track_idx, "Compressor")
+        time.sleep(SETTLE_TIME)
+
+        assert device_idx >= 0, "Compressor insertion failed"
+
+        device_names = track.get_device_names(track_idx)
+        assert any("Compressor" in name for name in device_names), (
+            f"Compressor not in {device_names}"
+        )
+    finally:
+        song.delete_track(track_idx)
+        time.sleep(SETTLE_TIME)
+
+
+def test_insert_nonexistent_device(song, track):
+    """Test that inserting a nonexistent device returns -1."""
+    original_tracks = song.get_num_tracks()
+    track_idx = original_tracks
+
+    song.create_midi_track(-1)
+    time.sleep(SETTLE_TIME)
+
+    try:
+        device_idx = track.insert_device(track_idx, "NonexistentDevice12345")
+        time.sleep(SETTLE_TIME)
+
+        assert device_idx == -1, "Should return -1 for nonexistent device"
+    finally:
+        song.delete_track(track_idx)
+        time.sleep(SETTLE_TIME)
+
+
+def test_get_device_names(song, track):
+    """Test getting device names from a track."""
+    original_tracks = song.get_num_tracks()
+    track_idx = original_tracks
+
+    song.create_midi_track(-1)
+    time.sleep(SETTLE_TIME)
+
+    try:
+        # Empty track should have no devices
+        device_names = track.get_device_names(track_idx)
+        assert isinstance(device_names, tuple)
+
+        # Add a device
+        track.insert_device(track_idx, "Wavetable")
+        time.sleep(SETTLE_TIME)
+
+        device_names = track.get_device_names(track_idx)
+        assert len(device_names) >= 1
+    finally:
+        song.delete_track(track_idx)
+        time.sleep(SETTLE_TIME)
+
+
+def test_delete_device(song, track):
+    """Test deleting a device from a track."""
+    original_tracks = song.get_num_tracks()
+    track_idx = original_tracks
+
+    song.create_midi_track(-1)
+    time.sleep(SETTLE_TIME)
+
+    try:
+        # Add device
+        track.insert_device(track_idx, "Wavetable")
+        time.sleep(SETTLE_TIME)
+
+        initial_count = track.get_num_devices(track_idx)
+        assert initial_count >= 1
+
+        # Delete device
+        track.delete_device(track_idx, 0)
+        time.sleep(SETTLE_TIME)
+
+        final_count = track.get_num_devices(track_idx)
+        assert final_count == initial_count - 1
+    finally:
+        song.delete_track(track_idx)
+        time.sleep(SETTLE_TIME)

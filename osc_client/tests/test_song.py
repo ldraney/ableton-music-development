@@ -230,3 +230,241 @@ def test_capture_midi(song):
     # capture_midi requires recently played MIDI, so we just
     # verify it doesn't raise an exception
     song.capture_midi()
+
+
+# Scene management tests
+
+
+def test_create_and_delete_scene(song):
+    """Test creating and deleting a scene."""
+    original_count = song.get_num_scenes()
+
+    # Create scene at end
+    song.create_scene(-1)
+    time.sleep(SETTLE_TIME)
+    assert song.get_num_scenes() == original_count + 1
+
+    # Delete the new scene
+    song.delete_scene(original_count)
+    time.sleep(SETTLE_TIME)
+    assert song.get_num_scenes() == original_count
+
+
+def test_duplicate_scene(song):
+    """Test duplicating a scene."""
+    original_count = song.get_num_scenes()
+
+    # Duplicate scene 0
+    song.duplicate_scene(0)
+    time.sleep(SETTLE_TIME)
+    assert song.get_num_scenes() == original_count + 1
+
+    # Delete the duplicate (it appears at index 1)
+    song.delete_scene(1)
+    time.sleep(SETTLE_TIME)
+    assert song.get_num_scenes() == original_count
+
+
+def test_get_song_length(song):
+    """Test getting song length."""
+    length = song.get_song_length()
+    assert isinstance(length, float)
+    assert length >= 0
+
+
+# Loop control tests
+
+
+def test_get_loop(song):
+    """Test getting loop state."""
+    loop = song.get_loop()
+    assert isinstance(loop, bool)
+
+
+def test_set_loop(song):
+    """Test setting loop state."""
+    original = song.get_loop()
+    try:
+        song.set_loop(True)
+        time.sleep(SETTLE_TIME)
+        assert song.get_loop() is True
+
+        song.set_loop(False)
+        time.sleep(SETTLE_TIME)
+        assert song.get_loop() is False
+    finally:
+        song.set_loop(original)
+
+
+def test_get_loop_start(song):
+    """Test getting loop start."""
+    start = song.get_loop_start()
+    assert isinstance(start, float)
+    assert start >= 0
+
+
+def test_set_loop_start(song):
+    """Test setting loop start."""
+    original = song.get_loop_start()
+    try:
+        song.set_loop_start(4.0)
+        time.sleep(SETTLE_TIME)
+        assert abs(song.get_loop_start() - 4.0) < 0.01
+    finally:
+        song.set_loop_start(original)
+
+
+def test_get_loop_length(song):
+    """Test getting loop length."""
+    length = song.get_loop_length()
+    assert isinstance(length, float)
+    assert length > 0
+
+
+def test_set_loop_length(song):
+    """Test setting loop length."""
+    original = song.get_loop_length()
+    try:
+        song.set_loop_length(8.0)
+        time.sleep(SETTLE_TIME)
+        assert abs(song.get_loop_length() - 8.0) < 0.01
+    finally:
+        song.set_loop_length(original)
+
+
+# Quantization tests
+
+
+def test_get_midi_recording_quantization(song):
+    """Test getting MIDI recording quantization."""
+    quant = song.get_midi_recording_quantization()
+    assert isinstance(quant, int)
+    assert 0 <= quant <= 8
+
+
+def test_set_midi_recording_quantization(song):
+    """Test setting MIDI recording quantization."""
+    original = song.get_midi_recording_quantization()
+    try:
+        song.set_midi_recording_quantization(2)  # 1/8
+        time.sleep(SETTLE_TIME)
+        assert song.get_midi_recording_quantization() == 2
+    finally:
+        song.set_midi_recording_quantization(original)
+
+
+def test_get_clip_trigger_quantization(song):
+    """Test getting clip trigger quantization."""
+    quant = song.get_clip_trigger_quantization()
+    assert isinstance(quant, int)
+    assert 0 <= quant <= 13
+
+
+def test_set_clip_trigger_quantization(song):
+    """Test setting clip trigger quantization."""
+    original = song.get_clip_trigger_quantization()
+    try:
+        song.set_clip_trigger_quantization(4)  # 1 bar
+        time.sleep(SETTLE_TIME)
+        assert song.get_clip_trigger_quantization() == 4
+    finally:
+        song.set_clip_trigger_quantization(original)
+
+
+# Session recording tests
+
+
+def test_get_session_record(song):
+    """Test getting session record state."""
+    recording = song.get_session_record()
+    assert isinstance(recording, bool)
+
+
+def test_set_session_record(song):
+    """Test setting session record state."""
+    original = song.get_session_record()
+    try:
+        song.set_session_record(False)
+        time.sleep(SETTLE_TIME)
+        assert song.get_session_record() is False
+    finally:
+        song.set_session_record(original)
+
+
+def test_trigger_session_record(song):
+    """Test triggering session record (just verify no error)."""
+    # Just verify method executes without error
+    # Actual recording behavior depends on track state
+    song.trigger_session_record()
+    time.sleep(SETTLE_TIME)
+    # Turn it off to clean up
+    song.set_session_record(False)
+
+
+# Arrangement recording tests
+
+
+def test_get_arrangement_overdub(song):
+    """Test getting arrangement overdub state."""
+    overdub = song.get_arrangement_overdub()
+    assert isinstance(overdub, bool)
+
+
+def test_set_arrangement_overdub(song):
+    """Test setting arrangement overdub state."""
+    original = song.get_arrangement_overdub()
+    try:
+        song.set_arrangement_overdub(True)
+        time.sleep(SETTLE_TIME)
+        assert song.get_arrangement_overdub() is True
+
+        song.set_arrangement_overdub(False)
+        time.sleep(SETTLE_TIME)
+        assert song.get_arrangement_overdub() is False
+    finally:
+        song.set_arrangement_overdub(original)
+
+
+# Punch in/out tests
+
+
+def test_get_punch_in(song):
+    """Test getting punch-in state."""
+    punch_in = song.get_punch_in()
+    assert isinstance(punch_in, bool)
+
+
+def test_set_punch_in(song):
+    """Test setting punch-in state."""
+    original = song.get_punch_in()
+    try:
+        song.set_punch_in(True)
+        time.sleep(SETTLE_TIME)
+        assert song.get_punch_in() is True
+
+        song.set_punch_in(False)
+        time.sleep(SETTLE_TIME)
+        assert song.get_punch_in() is False
+    finally:
+        song.set_punch_in(original)
+
+
+def test_get_punch_out(song):
+    """Test getting punch-out state."""
+    punch_out = song.get_punch_out()
+    assert isinstance(punch_out, bool)
+
+
+def test_set_punch_out(song):
+    """Test setting punch-out state."""
+    original = song.get_punch_out()
+    try:
+        song.set_punch_out(True)
+        time.sleep(SETTLE_TIME)
+        assert song.get_punch_out() is True
+
+        song.set_punch_out(False)
+        time.sleep(SETTLE_TIME)
+        assert song.get_punch_out() is False
+    finally:
+        song.set_punch_out(original)
