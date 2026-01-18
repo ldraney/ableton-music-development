@@ -19,26 +19,24 @@ Ableton Live
 
 ## Development Phases
 
-### Phase 1: OSC Client Wrapper
+### Phase 1: OSC Client Wrapper ✅ COMPLETE
 Minimal, well-tested Python wrapper around `python-osc` for AbletonOSC's API.
 
-**Goals:**
-- Thin wrapper - don't over-abstract
-- Mirror AbletonOSC's hierarchical API structure
-- Comprehensive test coverage against live Ableton instance
-- Clear error handling for connection issues
+**Status:** 41 tests passing, 16 skipped (require clips/devices in project)
 
 **Structure:**
 ```
 osc_client/
 ├── __init__.py
 ├── client.py          # Core OSC send/receive
+├── application.py     # /live/application/*, /live/api/*
 ├── song.py            # /live/song/* operations
 ├── track.py           # /live/track/* operations
 ├── clip.py            # /live/clip/* operations
 ├── clip_slot.py       # /live/clip_slot/* operations
 ├── device.py          # /live/device/* operations
 ├── scene.py           # /live/scene/* operations
+├── view.py            # /live/view/* operations
 └── tests/
     ├── conftest.py    # Fixtures, live Ableton connection
     ├── test_song.py
@@ -88,4 +86,23 @@ Examples:
 /live/clip/get/notes [0, 0]   → get notes from track 0, clip 0
 ```
 
+**Response format:** Responses include input indices before value:
+- Song: `(value)` - no indices
+- Track: `(track_index, value)`
+- Scene: `(scene_index, value)`
+- Clip/ClipSlot: `(track_index, scene_index, value)`
+- Device: `(track_index, device_index, value)`
+- Parameter: `(track_index, device_index, param_index, value)`
+
 Full API: https://github.com/ideoforms/AbletonOSC#api-documentation
+
+## Setup
+```bash
+# Create venv and install
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+
+# Run tests (requires Ableton with AbletonOSC enabled)
+pytest -v
+```
