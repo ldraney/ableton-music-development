@@ -1,0 +1,87 @@
+"""Tests for Device operations.
+
+Note: Many tests require a device on track 0.
+Tests will be skipped if no device exists.
+"""
+
+import pytest
+
+
+@pytest.fixture
+def device_exists(track, device):
+    """Check if a device exists on track 0."""
+    num_devices = track.get_num_devices(0)
+    if num_devices == 0:
+        pytest.skip("No devices on track 0")
+    return True
+
+
+def test_get_name(device, device_exists):
+    """Test getting device name."""
+    name = device.get_name(0, 0)
+    assert isinstance(name, str)
+
+
+def test_get_class_name(device, device_exists):
+    """Test getting device class name."""
+    class_name = device.get_class_name(0, 0)
+    assert isinstance(class_name, str)
+
+
+def test_get_is_active(device, device_exists):
+    """Test checking if device is active."""
+    is_active = device.get_is_active(0, 0)
+    assert isinstance(is_active, bool)
+
+
+def test_set_is_active(device, device_exists):
+    """Test enabling/disabling device."""
+    original = device.get_is_active(0, 0)
+    try:
+        device.set_is_active(0, 0, False)
+        assert device.get_is_active(0, 0) is False
+
+        device.set_is_active(0, 0, True)
+        assert device.get_is_active(0, 0) is True
+    finally:
+        device.set_is_active(0, 0, original)
+
+
+def test_get_num_parameters(device, device_exists):
+    """Test getting parameter count."""
+    num_params = device.get_num_parameters(0, 0)
+    assert num_params >= 0
+
+
+def test_get_parameter_value(device, device_exists):
+    """Test getting parameter value."""
+    num_params = device.get_num_parameters(0, 0)
+    if num_params == 0:
+        pytest.skip("Device has no parameters")
+
+    value = device.get_parameter_value(0, 0, 0)
+    assert isinstance(value, float)
+
+
+def test_get_parameter_name(device, device_exists):
+    """Test getting parameter name."""
+    num_params = device.get_num_parameters(0, 0)
+    if num_params == 0:
+        pytest.skip("Device has no parameters")
+
+    name = device.get_parameter_name(0, 0, 0)
+    assert isinstance(name, str)
+
+
+def test_get_parameter_min_max(device, device_exists):
+    """Test getting parameter min/max."""
+    num_params = device.get_num_parameters(0, 0)
+    if num_params == 0:
+        pytest.skip("Device has no parameters")
+
+    min_val = device.get_parameter_min(0, 0, 0)
+    max_val = device.get_parameter_max(0, 0, 0)
+
+    assert isinstance(min_val, float)
+    assert isinstance(max_val, float)
+    assert min_val <= max_val
