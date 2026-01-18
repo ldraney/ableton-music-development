@@ -94,6 +94,49 @@ python3 -c "from osc_client import connect; connect().send('/live/api/reload')"
 - **Test against real Ableton** - no mocks for OSC layer, integration tests are the source of truth
 - **Minimal first** - get something working end-to-end before expanding
 
+## Code Organization
+
+### osc_client: Foundational Library (Read-Only)
+The `osc_client/` directory is the **foundation** of this project. It should be treated as read-only during normal song creation work.
+
+**When working on songs:** Import and use `osc_client`, but don't modify it.
+
+**When improving the library:**
+1. Create an issue describing the enhancement
+2. Open a PR with the changes
+3. Include tests for new functionality
+4. Merge only after tests pass
+
+This keeps the foundation stable while songs are developed in worktrees.
+
+### Songs: Use Git Worktrees
+Each song should be developed in its own git worktree to:
+- Keep song experiments isolated
+- Allow parallel work on multiple songs
+- Prevent song code from polluting the main branch
+
+```bash
+# Create a worktree for a new song
+git worktree add ../songs/lofi-study-beats -b song/lofi-study-beats
+
+# Work in that directory
+cd ../songs/lofi-study-beats
+
+# The osc_client is available via the main repo's install
+# Song scripts go in this worktree, not in main
+
+# When done, optionally remove the worktree
+git worktree remove ../songs/lofi-study-beats
+```
+
+**Song structure in worktree:**
+```
+songs/lofi-study-beats/
+├── main.py          # Song creation script
+├── README.md        # Song notes, BPM, key, etc.
+└── exports/         # Rendered audio files
+```
+
 ## AbletonOSC API Reference
 API follows pattern: `/live/{object}/{action}/{property}`
 
