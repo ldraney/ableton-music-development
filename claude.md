@@ -22,7 +22,7 @@ Ableton Live
 ### Phase 1: OSC Client Wrapper ✅ COMPLETE
 Minimal, well-tested Python wrapper around `python-osc` for AbletonOSC's API.
 
-**Status:** 41 tests passing, 16 skipped (require clips/devices in project)
+**Status:** Tests automated - clip tests create their own fixtures, only device tests require manual setup
 
 **Structure:**
 ```
@@ -106,3 +106,21 @@ pip install -e ".[dev]"
 # Run tests (requires Ableton with AbletonOSC enabled)
 pytest -v
 ```
+
+## Test Requirements
+
+### Automated Tests (No Setup Required)
+- **Song, Track, Scene, View tests**: Run automatically against any Ableton project
+- **Clip tests**: Create their own MIDI track and clip via `test_clip_with_notes` fixture
+  - You should hear a C major chord briefly when clip tests run (proves end-to-end)
+  - Track count returns to original after tests complete
+
+### Manual Setup Required (Device Tests)
+Device tests require a device (instrument or effect) on track 0:
+1. Open Ableton Live with AbletonOSC enabled
+2. Add any device to track 0 (e.g., drag "Simpler" or "Wavetable" onto track 0)
+3. Run `pytest -v`
+
+Without a device on track 0, device tests will skip with a clear message.
+
+**Note:** AbletonOSC doesn't support creating devices via OSC, so device tests cannot be fully automated.

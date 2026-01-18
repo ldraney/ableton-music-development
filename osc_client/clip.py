@@ -181,10 +181,10 @@ class Clip:
         result = self._client.query("/live/clip/get/notes", track_index, clip_index)
         notes = []
 
-        # Result format: pitch, start_time, duration, velocity, mute, ...
-        # Each note is 5 values
-        if result:
-            values = list(result)
+        # Result format: (track_index, scene_index, pitch, start_time, duration, velocity, mute, ...)
+        # Skip first 2 values (indices), then each note is 5 values
+        if result and len(result) > 2:
+            values = list(result)[2:]  # Skip track_index, scene_index
             for i in range(0, len(values), 5):
                 if i + 4 < len(values):
                     notes.append(

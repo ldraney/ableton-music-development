@@ -202,3 +202,49 @@ class Song:
         """Stop listening for play state changes."""
         self._client.send("/live/song/stop_listen/is_playing")
         self._client.stop_listener("/live/song/get/is_playing")
+
+    # Track management
+
+    def create_midi_track(self, index: int = -1) -> None:
+        """Create a new MIDI track.
+
+        Args:
+            index: Position to insert track (-1 appends to end)
+        """
+        self._client.send("/live/song/create_midi_track", index)
+
+    def create_audio_track(self, index: int = -1) -> None:
+        """Create a new audio track.
+
+        Args:
+            index: Position to insert track (-1 appends to end)
+        """
+        self._client.send("/live/song/create_audio_track", index)
+
+    def create_return_track(self) -> None:
+        """Create a new return track."""
+        self._client.send("/live/song/create_return_track")
+
+    def delete_track(self, index: int) -> None:
+        """Delete track at index.
+
+        Args:
+            index: Track index to delete (0-based)
+        """
+        self._client.send("/live/song/delete_track", index)
+
+    def delete_return_track(self, index: int) -> None:
+        """Delete return track at index.
+
+        Args:
+            index: Return track index to delete (0-based)
+        """
+        self._client.send("/live/song/delete_return_track", index)
+
+    def duplicate_track(self, index: int) -> None:
+        """Duplicate track at index.
+
+        Args:
+            index: Track index to duplicate (0-based)
+        """
+        self._client.send("/live/song/duplicate_track", index)

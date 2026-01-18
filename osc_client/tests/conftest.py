@@ -4,6 +4,8 @@ These are integration tests that require a running Ableton Live instance
 with AbletonOSC enabled.
 """
 
+import time
+
 import pytest
 
 from osc_client.client import AbletonOSCClient
@@ -97,3 +99,44 @@ def application(client):
     from osc_client.application import Application
 
     return Application(client)
+
+
+@pytest.fixture
+def test_clip_with_notes(client, song, clip_slot, clip):
+    """Create a temporary MIDI track with an audible clip for testing.
+
+    Creates a new MIDI track at the end, adds a 4-beat clip with a C major chord,
+    yields the track/scene indices, then cleans up.
+
+    The user should hear the chord briefly when clip tests run (proves end-to-end).
+    """
+    from osc_client.clip import Note
+
+    original_tracks = song.get_num_tracks()
+    track_idx = original_tracks  # New track will be at this index
+    scene_idx = 0
+
+    # Create MIDI track at end
+    song.create_midi_track(-1)
+    time.sleep(0.2)
+
+    # Create 4-beat clip
+    clip_slot.create_clip(track_idx, scene_idx, 4.0)
+    time.sleep(0.1)
+
+    # Add audible notes (C major chord)
+    notes = [
+        Note(pitch=60, start_time=0.0, duration=1.0, velocity=100),  # C4
+        Note(pitch=64, start_time=0.0, duration=1.0, velocity=100),  # E4
+        Note(pitch=67, start_time=0.0, duration=1.0, velocity=100),  # G4
+    ]
+    clip.add_notes(track_idx, scene_idx, notes)
+    time.sleep(0.1)
+
+    yield {"track": track_idx, "scene": scene_idx}
+
+    # Cleanup
+    clip_slot.delete_clip(track_idx, scene_idx)
+    time.sleep(0.1)
+    song.delete_track(track_idx)
+    time.sleep(0.1)

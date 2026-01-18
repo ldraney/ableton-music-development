@@ -112,3 +112,48 @@ def test_get_current_song_time(song):
     position = song.get_current_song_time()
     assert isinstance(position, float)
     assert position >= 0
+
+
+def test_create_and_delete_midi_track(song):
+    """Test creating and deleting a MIDI track."""
+    original_count = song.get_num_tracks()
+
+    # Create MIDI track at end
+    song.create_midi_track(-1)
+    time.sleep(SETTLE_TIME)
+    assert song.get_num_tracks() == original_count + 1
+
+    # Delete the new track
+    song.delete_track(original_count)
+    time.sleep(SETTLE_TIME)
+    assert song.get_num_tracks() == original_count
+
+
+def test_create_and_delete_audio_track(song):
+    """Test creating and deleting an audio track."""
+    original_count = song.get_num_tracks()
+
+    # Create audio track at end
+    song.create_audio_track(-1)
+    time.sleep(SETTLE_TIME)
+    assert song.get_num_tracks() == original_count + 1
+
+    # Delete the new track
+    song.delete_track(original_count)
+    time.sleep(SETTLE_TIME)
+    assert song.get_num_tracks() == original_count
+
+
+def test_duplicate_track(song):
+    """Test duplicating a track."""
+    original_count = song.get_num_tracks()
+
+    # Duplicate track 0
+    song.duplicate_track(0)
+    time.sleep(SETTLE_TIME)
+    assert song.get_num_tracks() == original_count + 1
+
+    # Delete the duplicate (it appears at index 1)
+    song.delete_track(1)
+    time.sleep(SETTLE_TIME)
+    assert song.get_num_tracks() == original_count
