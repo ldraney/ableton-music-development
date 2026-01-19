@@ -1,5 +1,6 @@
 """Tests for Track operations."""
 
+import threading
 import time
 
 SETTLE_TIME = 0.1  # Time for Ableton to process changes
@@ -447,3 +448,184 @@ def test_get_output_meter_right(track):
     level = track.get_output_meter_right(0)
     assert isinstance(level, float)
     assert 0.0 <= level <= 1.0
+
+
+# Listener tests
+
+
+def test_on_volume_change(track):
+    """Test volume change listener."""
+    received = threading.Event()
+    received_value = [None]
+
+    def callback(track_idx, volume):
+        received_value[0] = (track_idx, volume)
+        received.set()
+
+    original = track.get_volume(0)
+    new_volume = 0.5 if abs(original - 0.5) > 0.1 else 0.7
+    try:
+        track.on_volume_change(0, callback)
+        # Wait for initial callback
+        received.wait(timeout=2.0)
+        received.clear()
+        received_value[0] = None
+
+        track.set_volume(0, new_volume)
+        assert received.wait(timeout=2.0), "Volume callback not triggered"
+        assert received_value[0][0] == 0  # track index
+        assert abs(received_value[0][1] - new_volume) < 0.01  # volume value
+    finally:
+        track.stop_volume_listener(0)
+        track.set_volume(0, original)
+
+
+def test_on_mute_change(track):
+    """Test mute change listener."""
+    received = threading.Event()
+    received_value = [None]
+
+    def callback(track_idx, muted):
+        received_value[0] = (track_idx, muted)
+        received.set()
+
+    original = track.get_mute(0)
+    try:
+        track.on_mute_change(0, callback)
+        # Wait for initial callback
+        received.wait(timeout=2.0)
+        received.clear()
+        received_value[0] = None
+
+        track.set_mute(0, not original)
+        assert received.wait(timeout=2.0), "Mute callback not triggered"
+        assert received_value[0][0] == 0  # track index
+        assert received_value[0][1] == (not original)  # muted value
+    finally:
+        track.stop_mute_listener(0)
+        track.set_mute(0, original)
+
+
+def test_on_solo_change(track):
+    """Test solo change listener."""
+    received = threading.Event()
+    received_value = [None]
+
+    def callback(track_idx, soloed):
+        received_value[0] = (track_idx, soloed)
+        received.set()
+
+    original = track.get_solo(0)
+    try:
+        track.on_solo_change(0, callback)
+        # Wait for initial callback
+        received.wait(timeout=2.0)
+        received.clear()
+        received_value[0] = None
+
+        track.set_solo(0, not original)
+        assert received.wait(timeout=2.0), "Solo callback not triggered"
+        assert received_value[0][0] == 0  # track index
+        assert received_value[0][1] == (not original)  # soloed value
+    finally:
+        track.stop_solo_listener(0)
+        track.set_solo(0, original)
+
+
+def test_on_panning_change(track):
+    """Test panning change listener."""
+    received = threading.Event()
+    received_value = [None]
+
+    def callback(track_idx, pan):
+        received_value[0] = (track_idx, pan)
+        received.set()
+
+    original = track.get_panning(0)
+    new_pan = 0.5 if abs(original - 0.5) > 0.1 else -0.5
+    try:
+        track.on_panning_change(0, callback)
+        # Wait for initial callback
+        received.wait(timeout=2.0)
+        received.clear()
+        received_value[0] = None
+
+        track.set_panning(0, new_pan)
+        assert received.wait(timeout=2.0), "Panning callback not triggered"
+        assert received_value[0][0] == 0  # track index
+        assert abs(received_value[0][1] - new_pan) < 0.01  # pan value
+    finally:
+        track.stop_panning_listener(0)
+        track.set_panning(0, original)
+
+
+def test_on_name_change(track):
+    """Test name change listener."""
+    received = threading.Event()
+    received_value = [None]
+
+    def callback(track_idx, name):
+        received_value[0] = (track_idx, name)
+        received.set()
+
+    original = track.get_name(0)
+    new_name = "Test Track Listener"
+    try:
+        track.on_name_change(0, callback)
+        # Wait for initial callback
+        received.wait(timeout=2.0)
+        received.clear()
+        received_value[0] = None
+
+        track.set_name(0, new_name)
+        assert received.wait(timeout=2.0), "Name callback not triggered"
+        assert received_value[0][0] == 0  # track index
+        assert received_value[0][1] == new_name  # name value
+    finally:
+        track.stop_name_listener(0)
+        track.set_name(0, original)
+
+
+def test_multiple_track_listeners(track):
+    """Test listening to the same property on multiple tracks."""
+    received_0 = threading.Event()
+    received_1 = threading.Event()
+    values = [None, None]
+
+    def callback_0(track_idx, volume):
+        values[0] = (track_idx, volume)
+        received_0.set()
+
+    def callback_1(track_idx, volume):
+        values[1] = (track_idx, volume)
+        received_1.set()
+
+    original_0 = track.get_volume(0)
+    original_1 = track.get_volume(1) if track.get_num_devices(1) >= 0 else None
+
+    # This test requires at least 2 tracks
+    try:
+        num_devices_1 = track.get_num_devices(1)  # Will fail if track 1 doesn't exist
+    except Exception:
+        return  # Skip if only 1 track
+
+    try:
+        track.on_volume_change(0, callback_0)
+        track.on_volume_change(1, callback_1)
+        time.sleep(SETTLE_TIME)
+
+        # Change track 0 volume
+        track.set_volume(0, 0.4)
+        assert received_0.wait(timeout=2.0), "Track 0 volume callback not triggered"
+        assert values[0][0] == 0
+
+        # Change track 1 volume
+        track.set_volume(1, 0.6)
+        assert received_1.wait(timeout=2.0), "Track 1 volume callback not triggered"
+        assert values[1][0] == 1
+    finally:
+        track.stop_volume_listener(0)
+        track.stop_volume_listener(1)
+        track.set_volume(0, original_0)
+        if original_1 is not None:
+            track.set_volume(1, original_1)

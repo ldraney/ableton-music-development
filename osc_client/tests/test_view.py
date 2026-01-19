@@ -1,5 +1,10 @@
 """Tests for View operations."""
 
+import threading
+import time
+
+SETTLE_TIME = 0.1  # Time for Ableton to process changes
+
 
 def test_get_selected_track(view):
     """Test getting selected track."""
@@ -80,10 +85,6 @@ def test_get_selected_device(view):
 
 def test_set_selected_device(view, song, track):
     """Test setting selected device (requires device on track)."""
-    import time
-
-    SETTLE_TIME = 0.1
-
     # Create a track with a device
     original_tracks = song.get_num_tracks()
     track_idx = original_tracks
@@ -103,3 +104,70 @@ def test_set_selected_device(view, song, track):
     finally:
         song.delete_track(track_idx)
         time.sleep(SETTLE_TIME)
+
+
+# Listener tests
+
+
+def test_on_selected_track_change(view, song):
+    """Test selected track change listener."""
+    received = threading.Event()
+    received_value = [None]
+
+    def callback(track_idx):
+        received_value[0] = track_idx
+        received.set()
+
+    original = view.get_selected_track()
+    num_tracks = song.get_num_tracks()
+
+    # Need at least 2 tracks to test selection change
+    if num_tracks < 2:
+        return
+
+    new_track = 1 if original != 1 else 0
+    try:
+        view.on_selected_track_change(callback)
+        # Wait for initial callback
+        received.wait(timeout=2.0)
+        received.clear()
+        received_value[0] = None
+
+        view.set_selected_track(new_track)
+        assert received.wait(timeout=2.0), "Selected track callback not triggered"
+        assert received_value[0] == new_track
+    finally:
+        view.stop_selected_track_listener()
+        view.set_selected_track(original)
+
+
+def test_on_selected_scene_change(view, song):
+    """Test selected scene change listener."""
+    received = threading.Event()
+    received_value = [None]
+
+    def callback(scene_idx):
+        received_value[0] = scene_idx
+        received.set()
+
+    original = view.get_selected_scene()
+    num_scenes = song.get_num_scenes()
+
+    # Need at least 2 scenes to test selection change
+    if num_scenes < 2:
+        return
+
+    new_scene = 1 if original != 1 else 0
+    try:
+        view.on_selected_scene_change(callback)
+        # Wait for initial callback
+        received.wait(timeout=2.0)
+        received.clear()
+        received_value[0] = None
+
+        view.set_selected_scene(new_scene)
+        assert received.wait(timeout=2.0), "Selected scene callback not triggered"
+        assert received_value[0] == new_scene
+    finally:
+        view.stop_selected_scene_listener()
+        view.set_selected_scene(original)

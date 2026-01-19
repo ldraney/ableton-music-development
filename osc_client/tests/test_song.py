@@ -1,5 +1,6 @@
 """Tests for Song operations."""
 
+import threading
 import time
 
 SETTLE_TIME = 0.1  # Time for Ableton to process changes
@@ -564,3 +565,208 @@ def test_set_scale_name(song):
         assert song.get_scale_name() == "Major"
     finally:
         song.set_scale_name(original)
+
+
+# Bulk query tests
+
+
+def test_get_track_names(song):
+    """Test getting track names."""
+    names = song.get_track_names()
+    assert isinstance(names, tuple)
+    # Should have at least one track name
+    assert len(names) >= 1
+    for name in names:
+        assert isinstance(name, str)
+
+
+def test_get_track_names_range(song):
+    """Test getting track names with range."""
+    num_tracks = song.get_num_tracks()
+    if num_tracks >= 2:
+        # Get first 2 tracks
+        names = song.get_track_names(0, 2)
+        assert len(names) == 2
+
+
+def test_get_back_to_arranger(song):
+    """Test getting back-to-arranger state."""
+    back_to_arranger = song.get_back_to_arranger()
+    assert isinstance(back_to_arranger, bool)
+
+
+def test_set_back_to_arranger(song):
+    """Test triggering back-to-arranger."""
+    # Just verify the method executes without error
+    # Setting to True triggers the back-to-arranger action
+    song.set_back_to_arranger(True)
+    time.sleep(SETTLE_TIME)
+    # State should be False after triggering (it's a one-shot action)
+
+
+def test_nudge_down(song):
+    """Test nudge down (just verify no error)."""
+    # Nudge is a momentary action, just verify it executes
+    song.nudge_down()
+
+
+def test_nudge_up(song):
+    """Test nudge up (just verify no error)."""
+    # Nudge is a momentary action, just verify it executes
+    song.nudge_up()
+
+
+# Listener tests
+
+
+def test_on_tempo_change(song):
+    """Test tempo change listener."""
+    received = threading.Event()
+    received_value = [None]
+
+    def callback(tempo):
+        received_value[0] = tempo
+        received.set()
+
+    original = song.get_tempo()
+    new_tempo = 130.0 if original != 130.0 else 125.0
+    try:
+        song.on_tempo_change(callback)
+        # Wait for initial callback (listener sends current value when started)
+        received.wait(timeout=2.0)
+        received.clear()
+        received_value[0] = None
+
+        song.set_tempo(new_tempo)
+        assert received.wait(timeout=2.0), "Tempo callback not triggered"
+        assert received_value[0] == new_tempo
+    finally:
+        song.stop_tempo_listener()
+        song.set_tempo(original)
+
+
+def test_on_is_playing_change(song):
+    """Test is_playing change listener."""
+    received = threading.Event()
+    received_value = [None]
+
+    def callback(is_playing):
+        received_value[0] = is_playing
+        received.set()
+
+    original = song.get_is_playing()
+    try:
+        song.on_is_playing_change(callback)
+        # Wait for initial callback
+        received.wait(timeout=2.0)
+        received.clear()
+        received_value[0] = None
+
+        if original:
+            song.stop_playing()
+        else:
+            song.start_playing()
+        assert received.wait(timeout=2.0), "is_playing callback not triggered"
+        assert received_value[0] == (not original)
+    finally:
+        song.stop_is_playing_listener()
+        if original:
+            song.start_playing()
+        else:
+            song.stop_playing()
+
+
+def test_on_loop_change(song):
+    """Test loop change listener."""
+    received = threading.Event()
+    received_value = [None]
+
+    def callback(enabled):
+        received_value[0] = enabled
+        received.set()
+
+    original = song.get_loop()
+    try:
+        song.on_loop_change(callback)
+        # Wait for initial callback
+        received.wait(timeout=2.0)
+        received.clear()
+        received_value[0] = None
+
+        song.set_loop(not original)
+        assert received.wait(timeout=2.0), "Loop callback not triggered"
+        assert received_value[0] == (not original)
+    finally:
+        song.stop_loop_listener()
+        song.set_loop(original)
+
+
+def test_on_record_mode_change(song):
+    """Test record mode change listener."""
+    received = threading.Event()
+    received_value = [None]
+
+    def callback(enabled):
+        received_value[0] = enabled
+        received.set()
+
+    original = song.get_record_mode()
+    try:
+        song.on_record_mode_change(callback)
+        # Wait for initial callback
+        received.wait(timeout=2.0)
+        received.clear()
+        received_value[0] = None
+
+        song.set_record_mode(not original)
+        assert received.wait(timeout=2.0), "Record mode callback not triggered"
+        assert received_value[0] == (not original)
+    finally:
+        song.stop_record_mode_listener()
+        song.set_record_mode(original)
+
+
+def test_on_beat(song):
+    """Test beat listener (requires playback)."""
+    received = threading.Event()
+    received_value = [None]
+
+    def callback(beat):
+        received_value[0] = beat
+        received.set()
+
+    original_playing = song.get_is_playing()
+    try:
+        song.on_beat(callback)
+        time.sleep(SETTLE_TIME)  # Let listener establish
+        song.start_playing()
+        # Beat listener should fire within ~1 beat (depends on tempo)
+        assert received.wait(timeout=3.0), "Beat callback not triggered"
+        assert isinstance(received_value[0], int)
+    finally:
+        song.stop_beat_listener()
+        if not original_playing:
+            song.stop_playing()
+
+
+def test_on_current_song_time_change(song):
+    """Test current song time change listener."""
+    received = threading.Event()
+    received_value = [None]
+
+    def callback(beats):
+        received_value[0] = beats
+        received.set()
+
+    original_playing = song.get_is_playing()
+    try:
+        song.on_current_song_time_change(callback)
+        time.sleep(SETTLE_TIME)  # Let listener establish
+        song.start_playing()
+        # Should receive position updates during playback
+        assert received.wait(timeout=2.0), "Current song time callback not triggered"
+        assert isinstance(received_value[0], float)
+    finally:
+        song.stop_current_song_time_listener()
+        if not original_playing:
+            song.stop_playing()

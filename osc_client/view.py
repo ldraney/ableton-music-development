@@ -3,6 +3,8 @@
 Covers /live/view/* endpoints for navigation and selection.
 """
 
+from typing import Callable
+
 from osc_client.client import AbletonOSCClient
 
 
@@ -123,3 +125,39 @@ class View:
             device_index: Device index (0-based)
         """
         self._client.send("/live/view/set/selected_device", track_index, device_index)
+
+    # Listeners
+
+    def on_selected_track_change(self, callback: Callable[[int], None]) -> None:
+        """Register a callback for track selection changes.
+
+        Args:
+            callback: Function(track_index) called when selection changes
+        """
+        self._client.send("/live/view/start_listen/selected_track")
+        self._client.start_listener(
+            "/live/view/get/selected_track",
+            lambda addr, *args: callback(int(args[0])),
+        )
+
+    def stop_selected_track_listener(self) -> None:
+        """Stop listening for track selection changes."""
+        self._client.send("/live/view/stop_listen/selected_track")
+        self._client.stop_listener("/live/view/get/selected_track")
+
+    def on_selected_scene_change(self, callback: Callable[[int], None]) -> None:
+        """Register a callback for scene selection changes.
+
+        Args:
+            callback: Function(scene_index) called when selection changes
+        """
+        self._client.send("/live/view/start_listen/selected_scene")
+        self._client.start_listener(
+            "/live/view/get/selected_scene",
+            lambda addr, *args: callback(int(args[0])),
+        )
+
+    def stop_selected_scene_listener(self) -> None:
+        """Stop listening for scene selection changes."""
+        self._client.send("/live/view/stop_listen/selected_scene")
+        self._client.stop_listener("/live/view/get/selected_scene")

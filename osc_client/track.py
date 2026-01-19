@@ -3,6 +3,8 @@
 Covers /live/track/* endpoints for individual track control.
 """
 
+from typing import Callable
+
 from osc_client.client import AbletonOSCClient
 
 
@@ -11,6 +13,10 @@ class Track:
 
     def __init__(self, client: AbletonOSCClient):
         self._client = client
+        # Track listener callbacks: {"property": {track_index: callback}}
+        self._track_callbacks: dict[str, dict[int, Callable]] = {}
+        # Set of properties with dispatchers registered
+        self._dispatcher_registered: set[str] = set()
 
     # Name
 
@@ -683,3 +689,191 @@ class Track:
             "/live/track/get/output_meter_right", track_index
         )
         return float(result[1]) if len(result) > 1 and result[1] is not None else 0.0
+
+    # Listener infrastructure
+
+    def _make_dispatcher(self, prop: str, converter: Callable) -> Callable:
+        """Create a dispatcher that routes callbacks by track index.
+
+        Args:
+            prop: Property name (e.g., "volume")
+            converter: Function to convert the value (e.g., float, bool)
+
+        Returns:
+            Dispatcher function for the OSC callback
+        """
+
+        def dispatcher(addr, *args):
+            # Response format: (track_index, value)
+            track_index = int(args[0])
+            value = converter(args[1])
+            if prop in self._track_callbacks:
+                if track_index in self._track_callbacks[prop]:
+                    self._track_callbacks[prop][track_index](track_index, value)
+
+        return dispatcher
+
+    def _start_track_listener(
+        self, track_index: int, prop: str, callback: Callable, converter: Callable
+    ) -> None:
+        """Start a listener for a track property.
+
+        Args:
+            track_index: Track index (0-based)
+            prop: Property name (e.g., "volume")
+            callback: Function(track_index, value) to call on change
+            converter: Function to convert the value
+        """
+        # Initialize callback dict for this property if needed
+        if prop not in self._track_callbacks:
+            self._track_callbacks[prop] = {}
+
+        # Register callback for this track
+        self._track_callbacks[prop][track_index] = callback
+
+        # Register dispatcher if not already done for this property
+        if prop not in self._dispatcher_registered:
+            response_addr = f"/live/track/get/{prop}"
+            self._client.start_listener(
+                response_addr, self._make_dispatcher(prop, converter)
+            )
+            self._dispatcher_registered.add(prop)
+
+        # Tell AbletonOSC to start sending updates for this track
+        self._client.send(f"/live/track/start_listen/{prop}", track_index)
+
+    def _stop_track_listener(self, track_index: int, prop: str) -> None:
+        """Stop a listener for a track property.
+
+        Args:
+            track_index: Track index (0-based)
+            prop: Property name
+        """
+        # Tell AbletonOSC to stop sending updates for this track
+        self._client.send(f"/live/track/stop_listen/{prop}", track_index)
+
+        # Remove callback
+        if prop in self._track_callbacks:
+            self._track_callbacks[prop].pop(track_index, None)
+
+            # If no more callbacks for this property, unregister dispatcher
+            if not self._track_callbacks[prop]:
+                response_addr = f"/live/track/get/{prop}"
+                self._client.stop_listener(response_addr)
+                self._dispatcher_registered.discard(prop)
+
+    # Track Listeners
+
+    def on_volume_change(
+        self, track_index: int, callback: Callable[[int, float], None]
+    ) -> None:
+        """Register a callback for track volume changes.
+
+        Args:
+            track_index: Track index (0-based)
+            callback: Function(track_index, volume) called on change
+        """
+        self._start_track_listener(track_index, "volume", callback, float)
+
+    def stop_volume_listener(self, track_index: int) -> None:
+        """Stop listening for volume changes on a track.
+
+        Args:
+            track_index: Track index (0-based)
+        """
+        self._stop_track_listener(track_index, "volume")
+
+    def on_mute_change(
+        self, track_index: int, callback: Callable[[int, bool], None]
+    ) -> None:
+        """Register a callback for track mute changes.
+
+        Args:
+            track_index: Track index (0-based)
+            callback: Function(track_index, muted) called on change
+        """
+        self._start_track_listener(track_index, "mute", callback, bool)
+
+    def stop_mute_listener(self, track_index: int) -> None:
+        """Stop listening for mute changes on a track.
+
+        Args:
+            track_index: Track index (0-based)
+        """
+        self._stop_track_listener(track_index, "mute")
+
+    def on_solo_change(
+        self, track_index: int, callback: Callable[[int, bool], None]
+    ) -> None:
+        """Register a callback for track solo changes.
+
+        Args:
+            track_index: Track index (0-based)
+            callback: Function(track_index, soloed) called on change
+        """
+        self._start_track_listener(track_index, "solo", callback, bool)
+
+    def stop_solo_listener(self, track_index: int) -> None:
+        """Stop listening for solo changes on a track.
+
+        Args:
+            track_index: Track index (0-based)
+        """
+        self._stop_track_listener(track_index, "solo")
+
+    def on_arm_change(
+        self, track_index: int, callback: Callable[[int, bool], None]
+    ) -> None:
+        """Register a callback for track arm changes.
+
+        Args:
+            track_index: Track index (0-based)
+            callback: Function(track_index, armed) called on change
+        """
+        self._start_track_listener(track_index, "arm", callback, bool)
+
+    def stop_arm_listener(self, track_index: int) -> None:
+        """Stop listening for arm changes on a track.
+
+        Args:
+            track_index: Track index (0-based)
+        """
+        self._stop_track_listener(track_index, "arm")
+
+    def on_panning_change(
+        self, track_index: int, callback: Callable[[int, float], None]
+    ) -> None:
+        """Register a callback for track panning changes.
+
+        Args:
+            track_index: Track index (0-based)
+            callback: Function(track_index, pan) called on change
+        """
+        self._start_track_listener(track_index, "panning", callback, float)
+
+    def stop_panning_listener(self, track_index: int) -> None:
+        """Stop listening for panning changes on a track.
+
+        Args:
+            track_index: Track index (0-based)
+        """
+        self._stop_track_listener(track_index, "panning")
+
+    def on_name_change(
+        self, track_index: int, callback: Callable[[int, str], None]
+    ) -> None:
+        """Register a callback for track name changes.
+
+        Args:
+            track_index: Track index (0-based)
+            callback: Function(track_index, name) called on change
+        """
+        self._start_track_listener(track_index, "name", callback, str)
+
+    def stop_name_listener(self, track_index: int) -> None:
+        """Stop listening for name changes on a track.
+
+        Args:
+            track_index: Track index (0-based)
+        """
+        self._stop_track_listener(track_index, "name")

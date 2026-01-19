@@ -616,3 +616,116 @@ class Song:
             name: Scale name (e.g., "Major", "Minor", "Dorian")
         """
         self._client.send("/live/song/set/scale_name", name)
+
+    # Bulk queries
+
+    def get_track_names(self, start: int = 0, end: int = -1) -> tuple:
+        """Get names of all tracks in a range.
+
+        Args:
+            start: Starting track index (default 0)
+            end: Ending track index, exclusive (-1 for all)
+
+        Returns:
+            Tuple of track names
+        """
+        if end == -1:
+            end = self.get_num_tracks()
+        result = self._client.query("/live/song/get/track_names", start, end)
+        return result
+
+    def get_back_to_arranger(self) -> bool:
+        """Check if back-to-arranger button is highlighted.
+
+        Returns:
+            True if back-to-arranger is active (session changes pending)
+        """
+        result = self._client.query("/live/song/get/back_to_arranger")
+        return bool(result[0])
+
+    def set_back_to_arranger(self, enabled: bool) -> None:
+        """Trigger back-to-arranger.
+
+        When enabled=True, returns to arrangement view from session recording.
+
+        Args:
+            enabled: True to trigger back-to-arranger
+        """
+        self._client.send("/live/song/set/back_to_arranger", int(enabled))
+
+    def nudge_down(self) -> None:
+        """Nudge tempo down (temporary slow down)."""
+        self._client.send("/live/song/set/nudge_down", 1)
+
+    def nudge_up(self) -> None:
+        """Nudge tempo up (temporary speed up)."""
+        self._client.send("/live/song/set/nudge_up", 1)
+
+    # Additional Listeners
+
+    def on_beat(self, callback: Callable[[int], None]) -> None:
+        """Register a callback for beat notifications.
+
+        The callback is called on each beat during playback.
+
+        Args:
+            callback: Function(beat) called on each beat
+        """
+        self._client.send("/live/song/start_listen/beat")
+        self._client.start_listener(
+            "/live/song/get/beat", lambda addr, *args: callback(int(args[0]))
+        )
+
+    def stop_beat_listener(self) -> None:
+        """Stop listening for beat notifications."""
+        self._client.send("/live/song/stop_listen/beat")
+        self._client.stop_listener("/live/song/get/beat")
+
+    def on_loop_change(self, callback: Callable[[bool], None]) -> None:
+        """Register a callback for loop state changes.
+
+        Args:
+            callback: Function(enabled) called when loop state changes
+        """
+        self._client.send("/live/song/start_listen/loop")
+        self._client.start_listener(
+            "/live/song/get/loop", lambda addr, *args: callback(bool(args[0]))
+        )
+
+    def stop_loop_listener(self) -> None:
+        """Stop listening for loop state changes."""
+        self._client.send("/live/song/stop_listen/loop")
+        self._client.stop_listener("/live/song/get/loop")
+
+    def on_record_mode_change(self, callback: Callable[[bool], None]) -> None:
+        """Register a callback for record mode changes.
+
+        Args:
+            callback: Function(enabled) called when record mode changes
+        """
+        self._client.send("/live/song/start_listen/record_mode")
+        self._client.start_listener(
+            "/live/song/get/record_mode", lambda addr, *args: callback(bool(args[0]))
+        )
+
+    def stop_record_mode_listener(self) -> None:
+        """Stop listening for record mode changes."""
+        self._client.send("/live/song/stop_listen/record_mode")
+        self._client.stop_listener("/live/song/get/record_mode")
+
+    def on_current_song_time_change(self, callback: Callable[[float], None]) -> None:
+        """Register a callback for playhead position changes.
+
+        Args:
+            callback: Function(beats) called when playhead moves
+        """
+        self._client.send("/live/song/start_listen/current_song_time")
+        self._client.start_listener(
+            "/live/song/get/current_song_time",
+            lambda addr, *args: callback(float(args[0])),
+        )
+
+    def stop_current_song_time_listener(self) -> None:
+        """Stop listening for playhead position changes."""
+        self._client.send("/live/song/stop_listen/current_song_time")
+        self._client.stop_listener("/live/song/get/current_song_time")
