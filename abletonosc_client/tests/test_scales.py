@@ -1,7 +1,7 @@
 """Tests for scales module - no Ableton connection required."""
 
 import pytest
-from osc_client.scales import (
+from abletonosc_client.scales import (
     note_to_midi,
     midi_to_note,
     get_scale,

@@ -3,17 +3,18 @@
 Provides a Pythonic interface to control Ableton Live via OSC.
 """
 
-from osc_client.application import Application
-from osc_client.client import AbletonOSCClient
-from osc_client.clip import Clip
-from osc_client.clip_slot import ClipSlot
-from osc_client.device import Device
-from osc_client.scene import Scene
-from osc_client.song import Song
-from osc_client.track import Track
-from osc_client.view import View
-from osc_client import scales
-from osc_client import chords
+from abletonosc_client.application import Application
+from abletonosc_client.client import AbletonOSCClient
+from abletonosc_client.clip import Clip
+from abletonosc_client.clip_slot import ClipSlot
+from abletonosc_client.device import Device
+from abletonosc_client.midimap import MidiMap
+from abletonosc_client.scene import Scene
+from abletonosc_client.song import Song
+from abletonosc_client.track import Track
+from abletonosc_client.view import View
+from abletonosc_client import scales
+from abletonosc_client import chords
 
 __all__ = [
     "AbletonOSCClient",
@@ -21,6 +22,7 @@ __all__ = [
     "Clip",
     "ClipSlot",
     "Device",
+    "MidiMap",
     "Scene",
     "Song",
     "Track",

@@ -3,7 +3,7 @@
 Build chords from roots, get chord tones, create voicings.
 """
 
-from osc_client.scales import note_to_midi, NOTE_OFFSETS
+from abletonosc_client.scales import note_to_midi, NOTE_OFFSETS
 
 # Chord formulas as semitone intervals from root
 CHORD_FORMULAS = {

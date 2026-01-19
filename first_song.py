@@ -5,14 +5,14 @@ Run this script with Ableton Live open and AbletonOSC enabled.
 """
 
 import time
-import osc_client
-from osc_client.clip import Note
+import abletonosc_client
+from abletonosc_client.clip import Note
 
 
 def create_tracks(client):
     """Step 1: Create 5 MIDI tracks for our song."""
-    song = osc_client.Song(client)
-    track = osc_client.Track(client)
+    song = abletonosc_client.Song(client)
+    track = abletonosc_client.Track(client)
 
     initial_tracks = song.get_num_tracks()
     print(f"Current track count: {initial_tracks}")
@@ -41,10 +41,10 @@ def create_tracks(client):
 
 def compose_song(client):
     """Step 3: Compose a simple 8-bar loop on all tracks."""
-    clip_slot = osc_client.ClipSlot(client)
-    clip = osc_client.Clip(client)
-    song = osc_client.Song(client)
-    scene = osc_client.Scene(client)
+    clip_slot = abletonosc_client.ClipSlot(client)
+    clip = abletonosc_client.Clip(client)
+    song = abletonosc_client.Song(client)
+    scene = abletonosc_client.Scene(client)
 
     # Set tempo
     song.set_tempo(120.0)
@@ -191,8 +191,8 @@ def compose_song(client):
 
 def play_song(client):
     """Step 4: Fire the scene and start playback."""
-    scene = osc_client.Scene(client)
-    song = osc_client.Song(client)
+    scene = abletonosc_client.Scene(client)
+    song = abletonosc_client.Song(client)
 
     print("\nFiring scene 0 (Main Loop)...")
     scene.fire(0)
@@ -207,7 +207,7 @@ def play_song(client):
 
 def stop_song(client):
     """Stop playback."""
-    song = osc_client.Song(client)
+    song = abletonosc_client.Song(client)
     song.stop_playing()
     print("Playback stopped.")
 
@@ -220,8 +220,8 @@ def main():
 
     # Connect to Ableton
     print("\nConnecting to Ableton Live...")
-    client = osc_client.connect()
-    song = osc_client.Song(client)
+    client = abletonosc_client.connect()
+    song = abletonosc_client.Song(client)
 
     try:
         tempo = song.get_tempo()

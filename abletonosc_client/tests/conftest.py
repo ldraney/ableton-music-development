@@ -8,7 +8,7 @@ import time
 
 import pytest
 
-from osc_client.client import AbletonOSCClient
+from abletonosc_client.client import AbletonOSCClient
 
 
 # Global to track if we've already checked for Ableton
@@ -40,7 +40,7 @@ def client():
 @pytest.fixture(scope="session")
 def song(client):
     """Provide a Song instance."""
-    from osc_client.song import Song
+    from abletonosc_client.song import Song
 
     return Song(client)
 
@@ -48,7 +48,7 @@ def song(client):
 @pytest.fixture(scope="session")
 def track(client):
     """Provide a Track instance."""
-    from osc_client.track import Track
+    from abletonosc_client.track import Track
 
     return Track(client)
 
@@ -56,7 +56,7 @@ def track(client):
 @pytest.fixture(scope="session")
 def clip(client):
     """Provide a Clip instance."""
-    from osc_client.clip import Clip
+    from abletonosc_client.clip import Clip
 
     return Clip(client)
 
@@ -64,7 +64,7 @@ def clip(client):
 @pytest.fixture(scope="session")
 def clip_slot(client):
     """Provide a ClipSlot instance."""
-    from osc_client.clip_slot import ClipSlot
+    from abletonosc_client.clip_slot import ClipSlot
 
     return ClipSlot(client)
 
@@ -72,7 +72,7 @@ def clip_slot(client):
 @pytest.fixture(scope="session")
 def device(client):
     """Provide a Device instance."""
-    from osc_client.device import Device
+    from abletonosc_client.device import Device
 
     return Device(client)
 
@@ -80,7 +80,7 @@ def device(client):
 @pytest.fixture(scope="session")
 def scene(client):
     """Provide a Scene instance."""
-    from osc_client.scene import Scene
+    from abletonosc_client.scene import Scene
 
     return Scene(client)
 
@@ -88,7 +88,7 @@ def scene(client):
 @pytest.fixture(scope="session")
 def view(client):
     """Provide a View instance."""
-    from osc_client.view import View
+    from abletonosc_client.view import View
 
     return View(client)
 
@@ -96,9 +96,17 @@ def view(client):
 @pytest.fixture(scope="session")
 def application(client):
     """Provide an Application instance."""
-    from osc_client.application import Application
+    from abletonosc_client.application import Application
 
     return Application(client)
+
+
+@pytest.fixture(scope="session")
+def midimap(client):
+    """Provide a MidiMap instance."""
+    from abletonosc_client.midimap import MidiMap
+
+    return MidiMap(client)
 
 
 @pytest.fixture
@@ -110,7 +118,7 @@ def test_clip_with_notes(client, song, clip_slot, clip):
 
     The user should hear the chord briefly when clip tests run (proves end-to-end).
     """
-    from osc_client.clip import Note
+    from abletonosc_client.clip import Note
 
     original_tracks = song.get_num_tracks()
     track_idx = original_tracks  # New track will be at this index

@@ -85,3 +85,54 @@ def test_get_parameter_min_max(device, device_exists):
     assert isinstance(min_val, float)
     assert isinstance(max_val, float)
     assert min_val <= max_val
+
+
+# New endpoint tests (Gap Coverage - Batch Operations)
+
+
+def test_get_type(device, device_exists):
+    """Test getting device type."""
+    device_type = device.get_type(0, 0)
+    assert isinstance(device_type, int)
+    # 0=audio_effect, 1=instrument, 2=midi_effect
+    assert 0 <= device_type <= 2
+
+
+def test_get_parameters_names(device, device_exists):
+    """Test getting all parameter names in bulk."""
+    names = device.get_parameters_names(0, 0)
+    assert isinstance(names, tuple)
+
+
+def test_get_parameters_values(device, device_exists):
+    """Test getting all parameter values in bulk."""
+    values = device.get_parameters_values(0, 0)
+    assert isinstance(values, tuple)
+
+
+def test_get_parameters_mins(device, device_exists):
+    """Test getting all parameter minimums in bulk."""
+    mins = device.get_parameters_mins(0, 0)
+    assert isinstance(mins, tuple)
+
+
+def test_get_parameters_maxs(device, device_exists):
+    """Test getting all parameter maximums in bulk."""
+    maxs = device.get_parameters_maxs(0, 0)
+    assert isinstance(maxs, tuple)
+
+
+def test_get_parameters_is_quantized(device, device_exists):
+    """Test getting all parameter quantized states in bulk."""
+    quantized = device.get_parameters_is_quantized(0, 0)
+    assert isinstance(quantized, tuple)
+
+
+def test_get_parameter_value_string(device, device_exists):
+    """Test getting parameter display string."""
+    num_params = device.get_num_parameters(0, 0)
+    if num_params == 0:
+        pytest.skip("Device has no parameters")
+
+    value_string = device.get_parameter_value_string(0, 0, 0)
+    assert isinstance(value_string, str)

@@ -5,7 +5,7 @@ Covers /live/song/* endpoints for global song properties and transport.
 
 from typing import Callable
 
-from osc_client.client import AbletonOSCClient
+from abletonosc_client.client import AbletonOSCClient
 
 
 class Song:
@@ -729,3 +729,25 @@ class Song:
         """Stop listening for playhead position changes."""
         self._client.send("/live/song/stop_listen/current_song_time")
         self._client.stop_listener("/live/song/get/current_song_time")
+
+    # Session record status
+
+    def get_session_record_status(self) -> int:
+        """Get the session record status.
+
+        Returns:
+            Session record status (0=Off, 1=On, 2=Transition)
+        """
+        result = self._client.query("/live/song/get/session_record_status")
+        return int(result[0]) if result else 0
+
+    # Beat getter
+
+    def get_beat(self) -> float:
+        """Get the current beat position.
+
+        Returns:
+            Current beat position
+        """
+        result = self._client.query("/live/song/get/beat")
+        return float(result[0]) if result else 0.0

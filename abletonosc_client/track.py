@@ -5,7 +5,7 @@ Covers /live/track/* endpoints for individual track control.
 
 from typing import Callable
 
-from osc_client.client import AbletonOSCClient
+from abletonosc_client.client import AbletonOSCClient
 
 
 class Track:
@@ -462,6 +462,86 @@ class Track:
         )
         return result[1:] if len(result) > 1 else ()
 
+    def get_available_input_routing_channels(self, track_index: int) -> tuple:
+        """Get available input routing channels for a track.
+
+        Args:
+            track_index: Track index (0-based)
+
+        Returns:
+            Tuple of available input routing channel names
+        """
+        result = self._client.query(
+            "/live/track/get/available_input_routing_channels", track_index
+        )
+        return result[1:] if len(result) > 1 else ()
+
+    def get_available_output_routing_channels(self, track_index: int) -> tuple:
+        """Get available output routing channels for a track.
+
+        Args:
+            track_index: Track index (0-based)
+
+        Returns:
+            Tuple of available output routing channel names
+        """
+        result = self._client.query(
+            "/live/track/get/available_output_routing_channels", track_index
+        )
+        return result[1:] if len(result) > 1 else ()
+
+    # Bulk clip queries
+
+    def get_clips_names(self, track_index: int) -> tuple:
+        """Get names of all clips on a track.
+
+        Args:
+            track_index: Track index (0-based)
+
+        Returns:
+            Tuple of clip names (empty string for empty slots)
+        """
+        result = self._client.query("/live/track/get/clips/name", track_index)
+        return result[1:] if len(result) > 1 else ()
+
+    def get_clips_lengths(self, track_index: int) -> tuple:
+        """Get lengths of all clips on a track.
+
+        Args:
+            track_index: Track index (0-based)
+
+        Returns:
+            Tuple of clip lengths in beats (0 for empty slots)
+        """
+        result = self._client.query("/live/track/get/clips/length", track_index)
+        return result[1:] if len(result) > 1 else ()
+
+    def get_clips_colors(self, track_index: int) -> tuple:
+        """Get colors of all clips on a track.
+
+        Args:
+            track_index: Track index (0-based)
+
+        Returns:
+            Tuple of clip colors as integers
+        """
+        result = self._client.query("/live/track/get/clips/color", track_index)
+        return result[1:] if len(result) > 1 else ()
+
+    # Bulk device queries
+
+    def get_devices_class_names(self, track_index: int) -> tuple:
+        """Get class names (types) of all devices on a track.
+
+        Args:
+            track_index: Track index (0-based)
+
+        Returns:
+            Tuple of device class names (e.g., "Compressor", "Reverb")
+        """
+        result = self._client.query("/live/track/get/devices/class_name", track_index)
+        return result[1:] if len(result) > 1 else ()
+
     # Monitoring
 
     def get_current_monitoring_state(self, track_index: int) -> int:
@@ -477,6 +557,17 @@ class Track:
             "/live/track/get/current_monitoring_state", track_index
         )
         return int(result[1])
+
+    def set_current_monitoring_state(self, track_index: int, state: int) -> None:
+        """Set the current monitoring state for a track.
+
+        Args:
+            track_index: Track index (0-based)
+            state: Monitoring state (0=In, 1=Auto, 2=Off)
+        """
+        self._client.send(
+            "/live/track/set/current_monitoring_state", track_index, int(state)
+        )
 
     # Track capabilities
 

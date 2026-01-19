@@ -11,7 +11,7 @@ def test_query_timeout_without_ableton():
     """Test that timeout works when nothing is listening."""
     import pytest
 
-    from osc_client.client import AbletonOSCClient
+    from abletonosc_client.client import AbletonOSCClient
 
     # Use a port that nothing is listening on
     c = AbletonOSCClient(send_port=19999, receive_port=19998)

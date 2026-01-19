@@ -770,3 +770,20 @@ def test_on_current_song_time_change(song):
         song.stop_current_song_time_listener()
         if not original_playing:
             song.stop_playing()
+
+
+# New endpoint tests (Gap Coverage)
+
+
+def test_get_session_record_status(song):
+    """Test getting session record status."""
+    status = song.get_session_record_status()
+    assert isinstance(status, int)
+    # 0=Off, 1=On, 2=Transition
+    assert 0 <= status <= 2
+
+
+def test_get_beat(song):
+    """Test getting current beat."""
+    beat = song.get_beat()
+    assert isinstance(beat, float)

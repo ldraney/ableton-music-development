@@ -65,3 +65,24 @@ def test_get_is_recording(clip_slot):
     """Test checking if slot is recording."""
     is_recording = clip_slot.get_is_recording(0, 0)
     assert isinstance(is_recording, bool)
+
+
+# New endpoint tests (Gap Coverage)
+
+
+def test_get_has_stop_button(clip_slot):
+    """Test checking if slot has stop button."""
+    has_stop = clip_slot.get_has_stop_button(0, 0)
+    assert isinstance(has_stop, bool)
+
+
+def test_set_has_stop_button(clip_slot):
+    """Test setting stop button state."""
+    original = clip_slot.get_has_stop_button(0, 0)
+    try:
+        clip_slot.set_has_stop_button(0, 0, False)
+        assert clip_slot.get_has_stop_button(0, 0) is False
+        clip_slot.set_has_stop_button(0, 0, True)
+        assert clip_slot.get_has_stop_button(0, 0) is True
+    finally:
+        clip_slot.set_has_stop_button(0, 0, original)

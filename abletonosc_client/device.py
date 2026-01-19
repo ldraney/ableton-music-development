@@ -3,9 +3,9 @@
 Covers /live/device/* endpoints for device and parameter control.
 """
 
-from typing import NamedTuple
+from typing import Callable, NamedTuple
 
-from osc_client.client import AbletonOSCClient
+from abletonosc_client.client import AbletonOSCClient
 
 
 class Parameter(NamedTuple):
@@ -31,6 +31,9 @@ class Device:
 
     def __init__(self, client: AbletonOSCClient):
         self._client = client
+        # Listener callbacks: {(track_idx, device_idx, param_idx): callback}
+        self._param_callbacks: dict[tuple[int, int, int], Callable] = {}
+        self._dispatcher_registered: bool = False
 
     def get_name(self, track_index: int, device_index: int) -> str:
         """Get the device name.
@@ -246,3 +249,212 @@ class Device:
             )
 
         return parameters
+
+    # Device type
+
+    def get_type(self, track_index: int, device_index: int) -> int:
+        """Get the device type.
+
+        Args:
+            track_index: Track index (0-based)
+            device_index: Device index on track (0-based)
+
+        Returns:
+            Device type (0=audio_effect, 1=instrument, 2=midi_effect)
+        """
+        result = self._client.query(
+            "/live/device/get/type", track_index, device_index
+        )
+        return int(result[2]) if len(result) > 2 else 0
+
+    # Bulk parameter operations
+
+    def get_parameters_names(self, track_index: int, device_index: int) -> tuple:
+        """Get all parameter names for a device in a single query.
+
+        Args:
+            track_index: Track index (0-based)
+            device_index: Device index on track (0-based)
+
+        Returns:
+            Tuple of parameter names
+        """
+        result = self._client.query(
+            "/live/device/get/parameters/name", track_index, device_index
+        )
+        # Response format: (track_index, device_index, name1, name2, ...)
+        return result[2:] if len(result) > 2 else ()
+
+    def get_parameters_values(self, track_index: int, device_index: int) -> tuple:
+        """Get all parameter values for a device in a single query.
+
+        Args:
+            track_index: Track index (0-based)
+            device_index: Device index on track (0-based)
+
+        Returns:
+            Tuple of parameter values
+        """
+        result = self._client.query(
+            "/live/device/get/parameters/value", track_index, device_index
+        )
+        return result[2:] if len(result) > 2 else ()
+
+    def set_parameters_values(
+        self, track_index: int, device_index: int, values: list[float]
+    ) -> None:
+        """Set all parameter values for a device in a single call.
+
+        Args:
+            track_index: Track index (0-based)
+            device_index: Device index on track (0-based)
+            values: List of parameter values (one per parameter)
+        """
+        self._client.send(
+            "/live/device/set/parameters/value",
+            track_index,
+            device_index,
+            *[float(v) for v in values],
+        )
+
+    def get_parameters_mins(self, track_index: int, device_index: int) -> tuple:
+        """Get all parameter minimum values for a device.
+
+        Args:
+            track_index: Track index (0-based)
+            device_index: Device index on track (0-based)
+
+        Returns:
+            Tuple of minimum values
+        """
+        result = self._client.query(
+            "/live/device/get/parameters/min", track_index, device_index
+        )
+        return result[2:] if len(result) > 2 else ()
+
+    def get_parameters_maxs(self, track_index: int, device_index: int) -> tuple:
+        """Get all parameter maximum values for a device.
+
+        Args:
+            track_index: Track index (0-based)
+            device_index: Device index on track (0-based)
+
+        Returns:
+            Tuple of maximum values
+        """
+        result = self._client.query(
+            "/live/device/get/parameters/max", track_index, device_index
+        )
+        return result[2:] if len(result) > 2 else ()
+
+    def get_parameters_is_quantized(
+        self, track_index: int, device_index: int
+    ) -> tuple:
+        """Get which parameters are quantized (stepped) for a device.
+
+        Args:
+            track_index: Track index (0-based)
+            device_index: Device index on track (0-based)
+
+        Returns:
+            Tuple of booleans indicating if each parameter is quantized
+        """
+        result = self._client.query(
+            "/live/device/get/parameters/is_quantized", track_index, device_index
+        )
+        return tuple(bool(v) for v in result[2:]) if len(result) > 2 else ()
+
+    # Parameter value string
+
+    def get_parameter_value_string(
+        self, track_index: int, device_index: int, parameter_index: int
+    ) -> str:
+        """Get a parameter's display string (formatted value with units).
+
+        Args:
+            track_index: Track index (0-based)
+            device_index: Device index on track (0-based)
+            parameter_index: Parameter index (0-based)
+
+        Returns:
+            Formatted parameter value string (e.g., "440 Hz", "-12 dB")
+        """
+        result = self._client.query(
+            "/live/device/get/parameter/value_string",
+            track_index,
+            device_index,
+            parameter_index,
+        )
+        return str(result[3]) if len(result) > 3 else ""
+
+    # Parameter listener
+
+    def _param_dispatcher(self, addr, *args):
+        """Dispatch parameter value updates to registered callbacks."""
+        # Response format: (track_index, device_index, param_index, value)
+        if len(args) >= 4:
+            key = (int(args[0]), int(args[1]), int(args[2]))
+            value = float(args[3])
+            if key in self._param_callbacks:
+                callback = self._param_callbacks[key]
+                callback(key[0], key[1], key[2], value)
+
+    def on_parameter_value_change(
+        self,
+        track_index: int,
+        device_index: int,
+        parameter_index: int,
+        callback: Callable[[int, int, int, float], None],
+    ) -> None:
+        """Register a callback for parameter value changes.
+
+        Args:
+            track_index: Track index (0-based)
+            device_index: Device index on track (0-based)
+            parameter_index: Parameter index (0-based)
+            callback: Function(track_index, device_index, param_index, value)
+        """
+        key = (track_index, device_index, parameter_index)
+        self._param_callbacks[key] = callback
+
+        # Register dispatcher if not already done
+        if not self._dispatcher_registered:
+            self._client.start_listener(
+                "/live/device/get/parameter/value", self._param_dispatcher
+            )
+            self._dispatcher_registered = True
+
+        # Tell AbletonOSC to start sending updates
+        self._client.send(
+            "/live/device/start_listen/parameter/value",
+            track_index,
+            device_index,
+            parameter_index,
+        )
+
+    def stop_parameter_value_listener(
+        self, track_index: int, device_index: int, parameter_index: int
+    ) -> None:
+        """Stop listening for parameter value changes.
+
+        Args:
+            track_index: Track index (0-based)
+            device_index: Device index on track (0-based)
+            parameter_index: Parameter index (0-based)
+        """
+        # Tell AbletonOSC to stop sending updates
+        self._client.send(
+            "/live/device/stop_listen/parameter/value",
+            track_index,
+            device_index,
+            parameter_index,
+        )
+
+        # Remove callback
+        key = (track_index, device_index, parameter_index)
+        self._param_callbacks.pop(key, None)
+
+        # If no more callbacks, unregister dispatcher
+        if not self._param_callbacks and self._dispatcher_registered:
+            self._client.stop_listener("/live/device/get/parameter/value")
+            self._dispatcher_registered = False

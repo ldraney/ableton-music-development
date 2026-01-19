@@ -3,7 +3,7 @@
 Covers /live/application/* and /live/api/* endpoints.
 """
 
-from osc_client.client import AbletonOSCClient
+from abletonosc_client.client import AbletonOSCClient
 
 
 class Application:

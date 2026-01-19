@@ -7,7 +7,7 @@ and don't require manual setup.
 
 import pytest
 
-from osc_client.clip import Note
+from abletonosc_client.clip import Note
 
 
 def test_note_creation():
@@ -158,3 +158,108 @@ def test_get_pitch_fine(clip, test_clip_with_notes):
     assert isinstance(pitch, float)
     # MIDI clips return 0, audio clips return -50 to +50
     assert -50 <= pitch <= 50
+
+
+# New endpoint tests (Gap Coverage)
+
+
+def test_get_muted(clip, test_clip_with_notes):
+    """Test getting clip muted state."""
+    t, s = test_clip_with_notes["track"], test_clip_with_notes["scene"]
+    muted = clip.get_muted(t, s)
+    assert isinstance(muted, bool)
+
+
+def test_set_muted(clip, test_clip_with_notes):
+    """Test setting clip muted state."""
+    t, s = test_clip_with_notes["track"], test_clip_with_notes["scene"]
+    original = clip.get_muted(t, s)
+    try:
+        clip.set_muted(t, s, True)
+        assert clip.get_muted(t, s) is True
+        clip.set_muted(t, s, False)
+        assert clip.get_muted(t, s) is False
+    finally:
+        clip.set_muted(t, s, original)
+
+
+def test_get_color_index(clip, test_clip_with_notes):
+    """Test getting clip color index."""
+    t, s = test_clip_with_notes["track"], test_clip_with_notes["scene"]
+    color_index = clip.get_color_index(t, s)
+    assert isinstance(color_index, int)
+    assert 0 <= color_index <= 69
+
+
+def test_get_launch_mode(clip, test_clip_with_notes):
+    """Test getting clip launch mode."""
+    t, s = test_clip_with_notes["track"], test_clip_with_notes["scene"]
+    launch_mode = clip.get_launch_mode(t, s)
+    assert isinstance(launch_mode, int)
+    assert 0 <= launch_mode <= 3  # Trigger, Gate, Toggle, Repeat
+
+
+def test_get_launch_quantization(clip, test_clip_with_notes):
+    """Test getting clip launch quantization."""
+    t, s = test_clip_with_notes["track"], test_clip_with_notes["scene"]
+    quant = clip.get_launch_quantization(t, s)
+    assert isinstance(quant, int)
+
+
+def test_get_legato(clip, test_clip_with_notes):
+    """Test getting legato mode for MIDI clip."""
+    t, s = test_clip_with_notes["track"], test_clip_with_notes["scene"]
+    legato = clip.get_legato(t, s)
+    assert isinstance(legato, bool)
+
+
+def test_get_velocity_amount(clip, test_clip_with_notes):
+    """Test getting velocity amount for MIDI clip."""
+    t, s = test_clip_with_notes["track"], test_clip_with_notes["scene"]
+    velocity = clip.get_velocity_amount(t, s)
+    assert isinstance(velocity, float)
+
+
+def test_get_is_recording(clip, test_clip_with_notes):
+    """Test getting clip recording state."""
+    t, s = test_clip_with_notes["track"], test_clip_with_notes["scene"]
+    is_recording = clip.get_is_recording(t, s)
+    assert isinstance(is_recording, bool)
+    # Our test clip should not be recording
+    assert is_recording is False
+
+
+def test_get_is_overdubbing(clip, test_clip_with_notes):
+    """Test getting clip overdubbing state."""
+    t, s = test_clip_with_notes["track"], test_clip_with_notes["scene"]
+    is_overdubbing = clip.get_is_overdubbing(t, s)
+    assert isinstance(is_overdubbing, bool)
+
+
+def test_get_position(clip, test_clip_with_notes):
+    """Test getting clip position."""
+    t, s = test_clip_with_notes["track"], test_clip_with_notes["scene"]
+    position = clip.get_position(t, s)
+    assert isinstance(position, float)
+
+
+def test_get_start_marker(clip, test_clip_with_notes):
+    """Test getting clip start marker."""
+    t, s = test_clip_with_notes["track"], test_clip_with_notes["scene"]
+    marker = clip.get_start_marker(t, s)
+    assert isinstance(marker, float)
+
+
+def test_get_end_marker(clip, test_clip_with_notes):
+    """Test getting clip end marker."""
+    t, s = test_clip_with_notes["track"], test_clip_with_notes["scene"]
+    marker = clip.get_end_marker(t, s)
+    assert isinstance(marker, float)
+    assert marker > 0
+
+
+def test_get_has_groove(clip, test_clip_with_notes):
+    """Test getting has_groove state."""
+    t, s = test_clip_with_notes["track"], test_clip_with_notes["scene"]
+    has_groove = clip.get_has_groove(t, s)
+    assert isinstance(has_groove, bool)

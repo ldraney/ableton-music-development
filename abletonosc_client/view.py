@@ -5,7 +5,7 @@ Covers /live/view/* endpoints for navigation and selection.
 
 from typing import Callable
 
-from osc_client.client import AbletonOSCClient
+from abletonosc_client.client import AbletonOSCClient
 
 
 class View:

@@ -629,3 +629,53 @@ def test_multiple_track_listeners(track):
         track.set_volume(0, original_0)
         if original_1 is not None:
             track.set_volume(1, original_1)
+
+
+# New endpoint tests (Gap Coverage)
+
+
+def test_set_current_monitoring_state(track):
+    """Test setting current monitoring state."""
+    original = track.get_current_monitoring_state(0)
+    try:
+        # 0=In, 1=Auto, 2=Off
+        track.set_current_monitoring_state(0, 1)
+        assert track.get_current_monitoring_state(0) == 1
+    finally:
+        track.set_current_monitoring_state(0, original)
+
+
+def test_get_available_input_routing_channels(track):
+    """Test getting available input routing channels."""
+    channels = track.get_available_input_routing_channels(0)
+    assert isinstance(channels, tuple)
+
+
+def test_get_available_output_routing_channels(track):
+    """Test getting available output routing channels."""
+    channels = track.get_available_output_routing_channels(0)
+    assert isinstance(channels, tuple)
+
+
+def test_get_clips_names(track):
+    """Test getting bulk clip names for a track."""
+    names = track.get_clips_names(0)
+    assert isinstance(names, tuple)
+
+
+def test_get_clips_lengths(track):
+    """Test getting bulk clip lengths for a track."""
+    lengths = track.get_clips_lengths(0)
+    assert isinstance(lengths, tuple)
+
+
+def test_get_clips_colors(track):
+    """Test getting bulk clip colors for a track."""
+    colors = track.get_clips_colors(0)
+    assert isinstance(colors, tuple)
+
+
+def test_get_devices_class_names(track):
+    """Test getting bulk device class names for a track."""
+    class_names = track.get_devices_class_names(0)
+    assert isinstance(class_names, tuple)

@@ -1,4 +1,4 @@
-# Ableton Music Development
+# abletonosc-client
 
 ## Vision
 Make Ableton Live accessible through conversational AI. Users develop and modify songs through dialogue with Claude Code while observing changes in Ableton's UI. Reduce the expert-level learning curve by letting AI handle the interface complexity.
@@ -10,7 +10,7 @@ Claude Code
     ↓ MCP protocol
 MCP Server (tools organized by domain)
     ↓ Python calls
-OSC Client (thin wrapper around python-osc)
+abletonosc-client (PyPI package)
     ↓ UDP ports 11000/11001
 AbletonOSC (MIDI Remote Script)
     ↓ Live Object Model
@@ -21,33 +21,43 @@ Ableton Live
 
 ### Phase 1: OSC Client Wrapper ✅ COMPLETE (v1.0.0)
 Comprehensive Python wrapper around `python-osc` for AbletonOSC's API.
+Published to PyPI as `abletonosc-client`.
 
-**Status:** 212+ tests, fully automated (only device parameter tests require manual setup)
+**Installation:**
+```bash
+pip install abletonosc-client
+```
+
+**Status:** 263 tests, ~220 endpoints implemented (near-complete AbletonOSC coverage)
 
 **Capabilities:**
 - **Application**: Version info, reload script, log level, status bar messages
-- **Song**: Tempo, transport, time signature, tracks, scenes, loops, recording, quantization, cue points, key/scale, bulk queries (track names), nudge tempo
-- **Track**: Volume, pan, mute, solo, arm, color, routing, monitoring, meters, device management, sends
-- **Clip**: Notes (add/get/remove), properties (loop, warp, gain, pitch), launch/stop
-- **ClipSlot**: Create/delete/duplicate clips, launch, stop
-- **Device**: Parameters (get/set by index or name), enable/disable, device info
-- **Scene**: Name, color, tempo, time signature, launch
+- **Song**: Tempo, transport, time signature, tracks, scenes, loops, recording, quantization, cue points, key/scale, bulk queries (track names), nudge tempo, session record status
+- **Track**: Volume, pan, mute, solo, arm, color, routing (types + channels), monitoring (get/set), meters, device management, sends, bulk clip/device queries
+- **Clip**: Notes (add/get/remove), properties (loop, warp, gain, pitch, muted, markers, position), launch mode/quantization, recording state, playing position listener
+- **ClipSlot**: Create/delete/duplicate clips, launch, stop, stop button control
+- **Device**: Parameters (get/set by index or name, bulk get/set), enable/disable, device info, value strings, parameter listeners
+- **Scene**: Name, color, color_index, tempo (with enable), time signature (with enable), is_empty, fire_selected
 - **View**: Track/scene/clip/device selection, view focus
-- **Listeners**: Real-time callbacks for tempo, transport, loop, record, beat, song time, track properties (volume/mute/solo/arm/pan/name), view selection
+- **MidiMap**: MIDI CC mapping to device parameters
+- **Listeners**: Real-time callbacks for tempo, transport, loop, record, beat, song time, track properties, view selection, clip playing position, device parameters
 
 **Structure:**
 ```
-osc_client/
+abletonosc_client/
 ├── __init__.py
 ├── client.py          # Core OSC send/receive with listener support
 ├── application.py     # /live/application/*, /live/api/*
 ├── song.py            # /live/song/* operations + listeners
 ├── track.py           # /live/track/* operations + per-track listener dispatcher
-├── clip.py            # /live/clip/* operations
+├── clip.py            # /live/clip/* operations + playing position listener
 ├── clip_slot.py       # /live/clip_slot/* operations
-├── device.py          # /live/device/* operations
+├── device.py          # /live/device/* operations + parameter listeners
 ├── scene.py           # /live/scene/* operations
 ├── view.py            # /live/view/* operations + listeners
+├── midimap.py         # /live/midimap/* MIDI CC mapping
+├── scales.py          # Music theory: scales
+├── chords.py          # Music theory: chords
 └── tests/
     ├── conftest.py    # Fixtures, live Ableton connection
     ├── test_application.py
@@ -57,7 +67,10 @@ osc_client/
     ├── test_clip_slot.py
     ├── test_device.py
     ├── test_scene.py
-    └── test_view.py
+    ├── test_view.py
+    ├── test_midimap.py
+    ├── test_scales.py
+    └── test_chords.py
 ```
 
 ### Phase 2: MCP Server
@@ -75,6 +88,7 @@ Multi-step orchestration for complex production tasks.
 ## Key Repos
 - `ideoforms/AbletonOSC` - upstream OSC bridge (install this in Ableton)
 - `ldraney/AbletonOSC` - fork with device insertion support (PR #173 pending)
+- `ldraney/abletonosc-client` - this library (PyPI package)
 - `ldraney/ableton-manual` - RAG for Ableton Live 12 manual reference
 
 ## AbletonOSC Fork Setup
@@ -91,7 +105,7 @@ rm -rf "/Users/$USER/Music/Ableton/User Library/Remote Scripts/AbletonOSC"
 ln -s ~/AbletonOSC "/Users/$USER/Music/Ableton/User Library/Remote Scripts/AbletonOSC"
 
 # Restart Ableton or reload via OSC
-python3 -c "from osc_client import connect; connect().send('/live/api/reload')"
+python3 -c "from abletonosc_client import connect; connect().send('/live/api/reload')"
 ```
 
 **Why symlink?** Without it, you have two copies (git repo vs Remote Scripts) and must manually sync changes. The symlink makes them the same directory.
@@ -102,6 +116,7 @@ python3 -c "from osc_client import connect; connect().send('/live/api/reload')"
 - Python 3.11+
 - `python-osc` - OSC protocol client
 - `pytest` - testing
+- `poetry` - package management
 - Ableton Live 12 with AbletonOSC installed
 
 ## Development Principles
@@ -112,18 +127,17 @@ python3 -c "from osc_client import connect; connect().send('/live/api/reload')"
 
 ## Code Organization
 
-### osc_client: Foundational Library (Read-Only)
-The `osc_client/` directory is the **foundation** of this project. It should be treated as read-only during normal song creation work.
+### abletonosc_client: Published Library
+The `abletonosc_client/` directory is published to PyPI as `abletonosc-client`.
 
-**When working on songs:** Import and use `osc_client`, but don't modify it.
+**Usage:**
+```python
+from abletonosc_client import connect, Song, Track, Clip
 
-**When improving the library:**
-1. Create an issue describing the enhancement
-2. Open a PR with the changes
-3. Include tests for new functionality
-4. Merge only after tests pass
-
-This keeps the foundation stable while songs are developed in worktrees.
+client = connect()
+song = Song(client)
+song.set_tempo(120.0)
+```
 
 ### Songs: Use Git Worktrees
 Each song should be developed in its own git worktree to:
@@ -138,8 +152,8 @@ git worktree add ../songs/lofi-study-beats -b song/lofi-study-beats
 # Work in that directory
 cd ../songs/lofi-study-beats
 
-# The osc_client is available via the main repo's install
-# Song scripts go in this worktree, not in main
+# Install the library from PyPI
+pip install abletonosc-client
 
 # When done, optionally remove the worktree
 git worktree remove ../songs/lofi-study-beats
@@ -176,15 +190,15 @@ Examples:
 
 Full API: https://github.com/ideoforms/AbletonOSC#api-documentation
 
-## Setup
+## Setup (Development)
 ```bash
-# Create venv and install
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e ".[dev]"
+# Clone and install with Poetry
+git clone https://github.com/ldraney/abletonosc-client.git
+cd abletonosc-client
+poetry install
 
 # Run tests (requires Ableton with AbletonOSC enabled)
-pytest -v
+poetry run pytest -v
 ```
 
 ## Test Requirements

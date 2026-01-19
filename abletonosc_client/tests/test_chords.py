@@ -1,7 +1,7 @@
 """Tests for chords module - no Ableton connection required."""
 
 import pytest
-from osc_client.chords import (
+from abletonosc_client.chords import (
     get_chord,
     get_chord_in_key,
     get_progression,

@@ -3,7 +3,7 @@
 Covers /live/clip_slot/* endpoints for clip slot management.
 """
 
-from osc_client.client import AbletonOSCClient
+from abletonosc_client.client import AbletonOSCClient
 
 
 class ClipSlot:
@@ -116,3 +116,62 @@ class ClipSlot:
         )
         # Response format: (track_index, scene_index, is_recording)
         return bool(result[2])
+
+    # Stop button
+
+    def get_has_stop_button(self, track_index: int, scene_index: int) -> bool:
+        """Check if the clip slot has a stop button.
+
+        Args:
+            track_index: Track index (0-based)
+            scene_index: Scene index (0-based)
+
+        Returns:
+            True if slot has a stop button
+        """
+        result = self._client.query(
+            "/live/clip_slot/get/has_stop_button", track_index, scene_index
+        )
+        return bool(result[2]) if len(result) > 2 else True
+
+    def set_has_stop_button(
+        self, track_index: int, scene_index: int, has_button: bool
+    ) -> None:
+        """Set whether the clip slot has a stop button.
+
+        Args:
+            track_index: Track index (0-based)
+            scene_index: Scene index (0-based)
+            has_button: True to show stop button
+        """
+        self._client.send(
+            "/live/clip_slot/set/has_stop_button",
+            track_index,
+            scene_index,
+            int(has_button),
+        )
+
+    # Duplicate clip
+
+    def duplicate_clip_to(
+        self,
+        track_index: int,
+        scene_index: int,
+        dest_track_index: int,
+        dest_scene_index: int,
+    ) -> None:
+        """Duplicate the clip to another slot.
+
+        Args:
+            track_index: Source track index (0-based)
+            scene_index: Source scene index (0-based)
+            dest_track_index: Destination track index (0-based)
+            dest_scene_index: Destination scene index (0-based)
+        """
+        self._client.send(
+            "/live/clip_slot/duplicate_clip_to",
+            track_index,
+            scene_index,
+            dest_track_index,
+            dest_scene_index,
+        )
