@@ -60,7 +60,6 @@ def test_get_is_triggered(clip_slot):
     assert isinstance(is_triggered, bool)
 
 
-@pytest.mark.skip(reason="is_recording endpoint may not exist in AbletonOSC")
 def test_get_is_recording(clip_slot):
     """Test checking if slot is recording."""
     is_recording = clip_slot.get_is_recording(0, 0)
