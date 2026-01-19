@@ -19,29 +19,45 @@ Ableton Live
 
 ## Development Phases
 
-### Phase 1: OSC Client Wrapper ✅ COMPLETE
-Minimal, well-tested Python wrapper around `python-osc` for AbletonOSC's API.
+### Phase 1: OSC Client Wrapper ✅ COMPLETE (v1.0.0)
+Comprehensive Python wrapper around `python-osc` for AbletonOSC's API.
 
-**Status:** Tests automated - clip tests create their own fixtures, only device tests require manual setup
+**Status:** 212+ tests, fully automated (only device parameter tests require manual setup)
+
+**Capabilities:**
+- **Application**: Version info, reload script, log level, status bar messages
+- **Song**: Tempo, transport, time signature, tracks, scenes, loops, recording, quantization, cue points, key/scale, bulk queries (track names), nudge tempo
+- **Track**: Volume, pan, mute, solo, arm, color, routing, monitoring, meters, device management, sends
+- **Clip**: Notes (add/get/remove), properties (loop, warp, gain, pitch), launch/stop
+- **ClipSlot**: Create/delete/duplicate clips, launch, stop
+- **Device**: Parameters (get/set by index or name), enable/disable, device info
+- **Scene**: Name, color, tempo, time signature, launch
+- **View**: Track/scene/clip/device selection, view focus
+- **Listeners**: Real-time callbacks for tempo, transport, loop, record, beat, song time, track properties (volume/mute/solo/arm/pan/name), view selection
 
 **Structure:**
 ```
 osc_client/
 ├── __init__.py
-├── client.py          # Core OSC send/receive
+├── client.py          # Core OSC send/receive with listener support
 ├── application.py     # /live/application/*, /live/api/*
-├── song.py            # /live/song/* operations
-├── track.py           # /live/track/* operations
+├── song.py            # /live/song/* operations + listeners
+├── track.py           # /live/track/* operations + per-track listener dispatcher
 ├── clip.py            # /live/clip/* operations
 ├── clip_slot.py       # /live/clip_slot/* operations
 ├── device.py          # /live/device/* operations
 ├── scene.py           # /live/scene/* operations
-├── view.py            # /live/view/* operations
+├── view.py            # /live/view/* operations + listeners
 └── tests/
     ├── conftest.py    # Fixtures, live Ableton connection
+    ├── test_application.py
     ├── test_song.py
     ├── test_track.py
-    └── ...
+    ├── test_clip.py
+    ├── test_clip_slot.py
+    ├── test_device.py
+    ├── test_scene.py
+    └── test_view.py
 ```
 
 ### Phase 2: MCP Server
