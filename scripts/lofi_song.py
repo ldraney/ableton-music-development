@@ -12,12 +12,18 @@ Requirements:
     - Our AbletonOSC fork with device insertion support
 """
 
+import sys
 import time
+
+# Add the main repo to path when running from worktree
+sys.path.insert(0, '/Users/ldraney/ableton-music-development')
+
 from osc_client import connect, chords, scales
 from osc_client.clip import Clip, Note
 from osc_client.clip_slot import ClipSlot
 from osc_client.song import Song
 from osc_client.track import Track
+from osc_client.view import View
 
 
 def create_lofi_song():
@@ -30,6 +36,7 @@ def create_lofi_song():
     track = Track(osc_client)
     clip = Clip(osc_client)
     clip_slot = ClipSlot(osc_client)
+    view = View(osc_client)
 
     # Get initial track count to know where our new tracks start
     initial_tracks = song.get_num_tracks()
@@ -55,7 +62,7 @@ def create_lofi_song():
 
     for name in track_names:
         song.create_midi_track(-1)  # Append to end
-        time.sleep(0.1)  # Give Ableton time to create track
+        time.sleep(0.3)  # Give Ableton time to create track
 
     # Name the tracks (they're at the end)
     new_track_count = song.get_num_tracks()
@@ -77,25 +84,38 @@ def create_lofi_song():
     # =========================================================================
     print("\n[Step 3] Loading instruments...")
 
-    # Keys - Wavetable for Rhodes-style sound
-    result = track.insert_device(KEYS, "Wavetable")
-    print(f"  Keys: Wavetable (device index: {result})")
-    time.sleep(0.2)
+    # Helper to load device - must select track first since browser.load_item
+    # loads to the currently selected track
+    def load_device(track_idx, device_name):
+        view.set_selected_track(track_idx)
+        time.sleep(0.1)
+        result = track.insert_device(track_idx, device_name)
+        time.sleep(0.3)
+        return result
 
-    # Bass - Wavetable for sub bass
-    result = track.insert_device(BASS, "Wavetable")
-    print(f"  Bass: Wavetable (device index: {result})")
-    time.sleep(0.2)
+    # Keys - try Electric (Rhodes), fall back to Wavetable
+    result = load_device(KEYS, "Electric")
+    if result < 0:
+        result = load_device(KEYS, "Wavetable")
+        print(f"  Keys: Wavetable (device index: {result})")
+    else:
+        print(f"  Keys: Electric (device index: {result})")
+
+    # Bass - Operator for deep sub bass
+    result = load_device(BASS, "Operator")
+    if result < 0:
+        result = load_device(BASS, "Wavetable")
+        print(f"  Bass: Wavetable (device index: {result})")
+    else:
+        print(f"  Bass: Operator (device index: {result})")
 
     # Melody - Wavetable for soft lead
-    result = track.insert_device(MELODY, "Wavetable")
+    result = load_device(MELODY, "Wavetable")
     print(f"  Melody: Wavetable (device index: {result})")
-    time.sleep(0.2)
 
     # Drums - Drum Rack for 808 kit
-    result = track.insert_device(DRUMS, "Drum Rack")
+    result = load_device(DRUMS, "Drum Rack")
     print(f"  Drums: Drum Rack (device index: {result})")
-    time.sleep(0.2)
 
     # =========================================================================
     # Step 4: Create Clips (8 bars = 32 beats)
@@ -105,7 +125,7 @@ def create_lofi_song():
 
     for track_idx, name in zip([KEYS, BASS, MELODY, DRUMS], track_names):
         clip_slot.create_clip(track_idx, 0, clip_length)
-        time.sleep(0.1)
+        time.sleep(0.2)
         print(f"  Created clip on {name}")
 
     # =========================================================================
@@ -286,23 +306,22 @@ def create_lofi_song():
     # Step 10: Launch!
     # =========================================================================
     print("\n[Step 10] Launching clips...")
+    time.sleep(0.3)
 
     # Fire all clips in scene 0
     for track_idx in [KEYS, BASS, MELODY, DRUMS]:
         clip.fire(track_idx, 0)
         time.sleep(0.05)
 
-    # Start playback if not already playing
-    if not song.get_is_playing():
-        song.start_playing()
-
     print("\n" + "=" * 50)
     print("LOFI SONG CREATED!")
     print("=" * 50)
     print(f"Tracks created: {KEYS}-{DRUMS}")
     print("Listen for: jazzy chords, boom-bap drums, melodic phrases")
-    print("\nTip: Tweak Wavetable presets for different vibes!")
+    print("\nTip: Tweak instrument presets for different vibes!")
     print("     Try: Keys=EP/Rhodes, Bass=Sub, Melody=Pad/Lead")
+
+    osc_client.close()
 
 
 if __name__ == "__main__":
