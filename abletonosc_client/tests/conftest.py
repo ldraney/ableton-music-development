@@ -15,16 +15,39 @@ from abletonosc_client.client import AbletonOSCClient
 _ableton_available = None
 
 
+def _detect_wsl2_host() -> tuple[str, str | None]:
+    """Detect if running in WSL2 and return appropriate host settings."""
+    try:
+        with open("/proc/version", "r") as f:
+            if "microsoft" in f.read().lower():
+                # Running in WSL2 - get Windows host from default gateway
+                import subprocess
+                result = subprocess.run(
+                    ["ip", "route", "show", "default"],
+                    capture_output=True, text=True
+                )
+                if result.returncode == 0:
+                    parts = result.stdout.split()
+                    if len(parts) >= 3 and parts[0] == "default":
+                        windows_host = parts[2]
+                        return (windows_host, "0.0.0.0")
+    except Exception:
+        pass
+    return ("127.0.0.1", None)
+
+
 @pytest.fixture(scope="session")
 def client():
     """Provide a connected AbletonOSC client.
 
     Skips the test if Ableton is not running or AbletonOSC is not responding.
     Session-scoped to avoid port binding issues.
+    Auto-detects WSL2 and configures host accordingly.
     """
     global _ableton_available
 
-    c = AbletonOSCClient()
+    host, listen_host = _detect_wsl2_host()
+    c = AbletonOSCClient(host=host, listen_host=listen_host)
     try:
         c.query("/live/test", timeout=1.0)
         _ableton_available = True
